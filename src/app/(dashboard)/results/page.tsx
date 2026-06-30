@@ -44,7 +44,7 @@ export default function ResultsPage() {
 
   return (
     <div className="h-full overflow-y-auto">
-    <div className="mx-auto max-w-7xl px-6 py-8">
+    <div className="mx-auto max-w-7xl px-3 sm:px-6 py-5 sm:py-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-black">IELTS READING</p>
@@ -57,7 +57,7 @@ export default function ResultsPage() {
       </div>
 
       {completed.length > 0 && (
-        <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <div className="mb-6 grid gap-3 grid-cols-1 sm:grid-cols-3">
           {[
             { label: "Tests Done", value: completed.length, icon: BookOpen, color: "text-black bg-gray-50" },
             { label: "Average Band", value: avgBand, icon: BarChart3, color: "text-green-600 bg-green-50" },

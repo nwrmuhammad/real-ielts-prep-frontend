@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="uz" className={`${geist.variable} h-full`}>
-      <body className="h-full bg-gray-50 font-sans antialiased">
+    <html lang="uz" className={`${geist.variable} h-full overflow-hidden`}>
+      <body className="h-full overflow-hidden bg-gray-50 font-sans antialiased">
         {children}
         <Toaster position="top-right" />
       </body>

@@ -8,12 +8,19 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("user");
     const token = localStorage.getItem("token");
-    if (stored && token) {
-      setUser(JSON.parse(stored));
-    }
-    setLoading(false);
+    if (!token) { setLoading(false); return; }
+
+    api.get("/auth/me")
+      .then(({ data }) => {
+        localStorage.setItem("user", JSON.stringify(data));
+        setUser(data);
+      })
+      .catch(() => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -36,7 +43,8 @@ export function useAuth() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
-    window.location.href = "/login";
+    const isAdmin = window.location.pathname.startsWith("/admin");
+    window.location.href = isAdmin ? "/admin/login" : "/login";
   }, []);
 
   return { user, loading, login, register, logout };

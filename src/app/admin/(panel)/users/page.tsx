@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, Shield, X } from "lucide-react";
-import api from "@/lib/api";
+import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { adminApi as api } from "@/lib/api";
 import toast from "react-hot-toast";
+import ConfirmModal from "@/components/ConfirmModal";
 
 interface User {
   id: string;
@@ -75,7 +76,7 @@ function TariffModal({ user, onClose, onSave }: { user: User; onClose: () => voi
 
 // ─── Add user modal ──────────────────────────────────────────
 function AddUserModal({ onClose, onAdd }: { onClose: () => void; onAdd: (u: User) => void }) {
-  const [form, setForm] = useState({ name: "", email: "", role: "USER" as "USER" | "ADMIN", password: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -83,12 +84,7 @@ function AddUserModal({ onClose, onAdd }: { onClose: () => void; onAdd: (u: User
     setSaving(true);
     try {
       const { data } = await api.post("/auth/register", { name: form.name, email: form.email, password: form.password });
-      if (form.role === "ADMIN") {
-        const updated = await api.put(`/users/${data.user.id}`, { role: "ADMIN" });
-        onAdd({ ...updated.data, _count: { testResults: 0 } });
-      } else {
-        onAdd({ ...data.user, createdAt: new Date().toISOString(), _count: { testResults: 0 } });
-      }
+      onAdd({ ...data.user, createdAt: new Date().toISOString(), _count: { testResults: 0 } });
       toast.success("User qo'shildi");
       onClose();
     } catch (err: any) {
@@ -100,7 +96,7 @@ function AddUserModal({ onClose, onAdd }: { onClose: () => void; onAdd: (u: User
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="font-bold text-gray-900">Yangi user qo'shish</h2>
+          <h2 className="font-bold text-gray-900">Yangi user qo&apos;shish</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-900 transition"><X className="h-5 w-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -117,14 +113,6 @@ function AddUserModal({ onClose, onAdd }: { onClose: () => void; onAdd: (u: User
                 className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition" />
             </div>
           ))}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Role</label>
-            <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as "USER" | "ADMIN" })}
-              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition">
-              <option value="USER">User</option>
-              <option value="ADMIN">Admin</option>
-            </select>
-          </div>
           <div className="flex gap-3 pt-1">
             <button type="submit" disabled={saving}
               className="flex-1 rounded-full bg-red-500 py-2.5 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-60 transition">
@@ -143,14 +131,14 @@ function AddUserModal({ onClose, onAdd }: { onClose: () => void; onAdd: (u: User
 
 // ─── Edit user modal ─────────────────────────────────────────
 function EditUserModal({ user, onClose, onSave }: { user: User; onClose: () => void; onSave: (u: User) => void }) {
-  const [form, setForm] = useState({ name: user.name, email: user.email, role: user.role, password: "" });
+  const [form, setForm] = useState({ name: user.name, email: user.email, password: "" });
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     try {
-      const body: Record<string, string> = { name: form.name, email: form.email, role: form.role };
+      const body: Record<string, string> = { name: form.name, email: form.email };
       if (form.password) body.password = form.password;
       const { data } = await api.put(`/users/${user.id}`, body);
       onSave(data);
@@ -181,16 +169,8 @@ function EditUserModal({ user, onClose, onSave }: { user: User; onClose: () => v
             </div>
           ))}
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Role</label>
-            <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as "USER" | "ADMIN" })}
-              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition">
-              <option value="USER">User</option>
-              <option value="ADMIN">Admin</option>
-            </select>
-          </div>
-          <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
-              Yangi parol <span className="text-gray-400 font-normal">(bo'sh qoldirsa o'zgarmaydi)</span>
+              Yangi parol <span className="text-gray-400 font-normal">(bo&apos;sh qoldirsa o&apos;zgarmaydi)</span>
             </label>
             <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })}
               placeholder="••••••••"
@@ -219,29 +199,38 @@ export default function AdminUsersPage() {
   const [tariffUser, setTariffUser] = useState<User | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
+  const [confirmData, setConfirmData] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   useEffect(() => {
-    api.get("/users").then((r) => setUsers(r.data)).finally(() => setLoading(false));
+    api.get("/users").then((r) => {
+      setUsers((r.data as User[]).filter((u) => u.role !== "ADMIN"));
+    }).finally(() => setLoading(false));
   }, []);
 
-  async function handleDelete(u: User) {
-    if (!confirm(`"${u.name}" ni o'chirishni tasdiqlaysizmi?`)) return;
-    try {
-      await api.delete(`/users/${u.id}`);
-      setUsers((prev) => prev.filter((x) => x.id !== u.id));
-      toast.success("O'chirildi");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Xatolik yuz berdi");
-    }
+  function handleDelete(u: User) {
+    setConfirmData({
+      message: `"${u.name}" ni o'chirishni tasdiqlaysizmi?`,
+      onConfirm: async () => {
+        setConfirmData(null);
+        try {
+          await api.delete(`/users/${u.id}`);
+          setUsers((prev) => prev.filter((x) => x.id !== u.id));
+          toast.success("O'chirildi");
+        } catch (err: any) {
+          toast.error(err?.response?.data?.message || "Xatolic yuz berdi");
+        }
+      },
+    });
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
+      {confirmData && <ConfirmModal message={confirmData.message} onConfirm={confirmData.onConfirm} onCancel={() => setConfirmData(null)} />}
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Users</h1>
-          <p className="text-sm text-gray-400">{users.length} ta foydalanuvchi</p>
+          <p className="text-sm text-gray-400">{users.length} ta student</p>
         </div>
         <button
           onClick={() => setShowAddUser(true)}
@@ -255,13 +244,12 @@ export default function AdminUsersPage() {
       {loading ? (
         <div className="space-y-3">{[1,2,3,4].map((i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-gray-100" />)}</div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm">
           <table className="w-full text-sm">
             <thead className="border-b border-gray-100 bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-400">
               <tr>
                 <th className="px-6 py-4 text-left">User</th>
                 <th className="px-4 py-4 text-center">Tariff</th>
-                <th className="px-4 py-4 text-center">Role</th>
                 <th className="px-4 py-4 text-center">Tests</th>
                 <th className="px-4 py-4 text-center">Expires</th>
                 <th className="px-6 py-4 text-right">Actions</th>
@@ -271,35 +259,23 @@ export default function AdminUsersPage() {
               {users.map((u) => (
                 <tr
                   key={u.id}
-                  className={`group hover:bg-gray-50 transition ${u.role !== "ADMIN" ? "cursor-pointer" : ""}`}
-                  onClick={() => u.role !== "ADMIN" && setTariffUser(u)}
+                  className="group cursor-pointer hover:bg-gray-50 transition"
+                  onClick={() => setTariffUser(u)}
                 >
                   <td className="px-6 py-4">
                     <div className="font-semibold text-gray-900">{u.name}</div>
                     <div className="text-xs text-gray-400">{u.email}</div>
                   </td>
                   <td className="px-4 py-4 text-center">
-                    {u.role !== "ADMIN" ? (
-                      <div className="inline-flex flex-col items-center gap-0.5">
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          (u.tariff ?? "XAVASKOR") === "ERKATOY" ? "bg-purple-100 text-purple-700" : "bg-amber-100 text-amber-700"
-                        }`}>
-                          {(u.tariff ?? "XAVASKOR") === "ERKATOY" ? "Erkatoy" : "Xavaskor"}
-                        </span>
-                      </div>
-                    ) : <span className="text-xs text-gray-300">—</span>}
-                  </td>
-                  <td className="px-4 py-4 text-center">
-                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      u.role === "ADMIN" ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-600"
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      (u.tariff ?? "XAVASKOR") === "ERKATOY" ? "bg-purple-100 text-purple-700" : "bg-amber-100 text-amber-700"
                     }`}>
-                      {u.role === "ADMIN" && <Shield className="h-3 w-3" />}
-                      {u.role}
+                      {(u.tariff ?? "XAVASKOR") === "ERKATOY" ? "Erkatoy" : "Xavaskor"}
                     </span>
                   </td>
                   <td className="px-4 py-4 text-center text-gray-500">{u._count.testResults}</td>
                   <td className="px-4 py-4 text-center text-xs">
-                    {u.role !== "ADMIN" && u.tariff === "ERKATOY" && u.tariffExpiresAt ? (
+                    {u.tariff === "ERKATOY" && u.tariffExpiresAt ? (
                       <span className={daysLeft(u.tariffExpiresAt)! <= 5 ? "text-rose-500 font-semibold" : "text-gray-400"}>
                         {daysLeft(u.tariffExpiresAt)} kun qoldi
                       </span>

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { BookOpen, Clock, TrendingUp, ArrowRight, CheckCircle, Target, ChevronRight, Headphones, PenLine, Mic } from "lucide-react";
+import { BookOpen, Clock, TrendingUp, ArrowRight, CheckCircle, Target, ChevronRight, Headphones } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { TestResult } from "@/types";
 import api from "@/lib/api";
@@ -68,38 +68,6 @@ function StatCard({
   );
 }
 
-/* ── Animated band bar ─────────────────────────────── */
-function BandBar({ range, label, width, color, delay }: {
-  range: string; label: string; width: string; color: string; delay: number;
-}) {
-  const [started, setStarted] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setStarted(true); }, { threshold: 0.5 });
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, []);
-  return (
-    <div ref={ref}>
-      <div className="mb-1 flex justify-between text-xs">
-        <span className="font-semibold text-black">{range}</span>
-        <span className="text-gray-400">{label}</span>
-      </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-        <div
-          className={`h-full rounded-full ${color} transition-all`}
-          style={{
-            width: started ? width : "0%",
-            transitionDuration: "900ms",
-            transitionDelay: `${delay}ms`,
-            transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-          }}
-        />
-      </div>
-    </div>
-  );
-}
-
 /* ── Main page ─────────────────────────────────────── */
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -124,16 +92,16 @@ export default function DashboardPage() {
 
   return (
     <div className="h-full overflow-y-auto">
-    <div className="mx-auto max-w-screen-2xl px-6 py-8">
+    <div className="mx-auto max-w-screen-2xl px-3 sm:px-6 py-5 sm:py-8">
 
       {/* Hero ─ rose-50 with floating score card */}
-      <div className="animate-fade-up delay-0 mb-8 overflow-hidden rounded-3xl bg-gray-50 p-8">
+      <div className="animate-fade-up delay-0 mb-6 sm:mb-8 overflow-hidden rounded-2xl sm:rounded-3xl bg-gray-50 p-5 sm:p-8">
         <div className="flex items-start justify-between">
           <div>
             <p className="mb-1 text-xs font-bold uppercase tracking-widest text-black">
               REAL IELTS PREP
             </p>
-            <h1 className="text-3xl font-extrabold text-black">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-black">
               {greeting},{" "}
               <span className="relative inline-block">
                 {user?.name?.split(" ")[0]}
@@ -173,13 +141,11 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 4 Skills modules */}
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {/* Skills modules */}
+      <div className="mb-6 sm:mb-8 grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-2">
         {[
-          { icon: BookOpen,   label: "Reading",   sub: "Practice now",   color: "bg-red-50",    fg: "text-red-500",    href: "/reading",   live: true  },
-          { icon: Headphones, label: "Listening", sub: "Coming soon",    color: "bg-blue-50",   fg: "text-blue-400",   href: null,         live: false },
-          { icon: PenLine,    label: "Writing",   sub: "Coming soon",    color: "bg-amber-50",  fg: "text-amber-400",  href: null,         live: false },
-          { icon: Mic,        label: "Speaking",  sub: "Coming soon",    color: "bg-purple-50", fg: "text-purple-400", href: null,         live: false },
+          { icon: BookOpen,   label: "Reading",   sub: "Practice now",   color: "bg-red-50",  fg: "text-red-500",  href: "/reading", live: true  },
+          { icon: Headphones, label: "Listening", sub: "Coming soon",    color: "bg-blue-50", fg: "text-blue-400", href: null,       live: false },
         ].map(({ icon: Icon, label, sub, color, fg, href, live }) => (
           href ? (
             <Link key={label} href={href}
@@ -210,7 +176,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stat cards ─ count-up + staggered fade */}
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-6 sm:mb-8 grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Tests Completed" rawValue={completed.length} icon={BookOpen} color="bg-gray-50 text-black" delay={0} />
         <StatCard label="Average Band" rawValue={avgBandNum} icon={TrendingUp} color="bg-green-50 text-green-600" sub="IELTS scale 1–9" delay={80} isFloat suffix="" />
         <StatCard label="Best Band" rawValue={bestBand} icon={Target} color="bg-amber-50 text-amber-500" delay={160} />
@@ -224,7 +190,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         {/* Recent results */}
         <div className="lg:col-span-2 animate-fade-up delay-300">
           <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
@@ -287,22 +253,6 @@ export default function DashboardPage() {
 
         {/* Right column */}
         <div className="space-y-4">
-          {/* Animated band guide */}
-          <div className="animate-fade-up delay-400 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-            <h2 className="mb-4 font-bold text-black">Band Score Guide</h2>
-            <div className="space-y-3">
-              {[
-                { range: "8.5 – 9.0", label: "Expert",     w: "100%", color: "bg-green-500",  delay: 0 },
-                { range: "7.0 – 8.0", label: "Very Good",  w: "83%",  color: "bg-teal-500",   delay: 100 },
-                { range: "5.5 – 6.5", label: "Competent",  w: "65%",  color: "bg-amber-400",  delay: 200 },
-                { range: "4.0 – 5.0", label: "Limited",    w: "48%",  color: "bg-orange-400", delay: 300 },
-                { range: "1.0 – 3.5", label: "Beginner",   w: "30%",  color: "bg-gray-600",    delay: 400 },
-              ].map((b) => (
-                <BandBar key={b.range} range={b.range} label={b.label} width={b.w} color={b.color} delay={b.delay} />
-              ))}
-            </div>
-          </div>
-
           {/* Quick tip */}
           <div className="animate-fade-up delay-500 rounded-2xl bg-gray-50 p-5">
             <p className="mb-2 text-xs font-bold uppercase tracking-wider text-black">Reading Tip</p>

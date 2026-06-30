@@ -49,6 +49,7 @@ export interface Test {
   timeLimit: number;
   isPublished: boolean;
   status: TestStatus;
+  passageCategory?: number | null;
   passages?: Passage[];
   _count?: { passages: number; testResults: number };
   createdAt: string;

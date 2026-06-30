@@ -2,38 +2,33 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { GraduationCap, Shield, Mail, Lock, ArrowRight, BookOpen, Users, BarChart3 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { adminApi } from "@/lib/api";
 import toast from "react-hot-toast";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const { login, user, loading } = useAuth();
+  const { user, loading, login } = useAdminAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) {
-      if (user.role === "ADMIN") router.replace("/admin/tests");
-      else router.replace("/dashboard");
-    }
+    if (!loading && user?.role === "ADMIN") router.replace("/admin/tests");
   }, [user, loading, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const u = await login(form.email, form.password);
-      if (u.role !== "ADMIN") {
-        toast.error("Access denied. Admin only.");
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.reload();
-        return;
-      }
-      toast.success("Welcome, admin!");
+      await login(form.email, form.password);
+      toast.success("Xush kelibsiz, admin!");
       router.replace("/admin/tests");
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Invalid credentials");
+      if (err.message === "not_admin") {
+        toast.error("Bu akkaunt admin emas.");
+      } else {
+        toast.error(err.response?.data?.message || "Email yoki parol noto'g'ri");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -70,9 +65,9 @@ export default function AdminLoginPage() {
 
           <div className="space-y-3">
             {[
-              { icon: BookOpen, label: "Create & publish reading tests" },
-              { icon: Users,    label: "Manage users and assign tariffs" },
-              { icon: BarChart3, label: "View submissions and results" },
+              { icon: BookOpen,  label: "Create & publish reading tests"   },
+              { icon: Users,     label: "Manage users and assign tariffs"  },
+              { icon: BarChart3, label: "View submissions and results"     },
             ].map(({ icon: Icon, label }) => (
               <div key={label} className="flex items-center gap-3 rounded-xl bg-white border border-gray-100 px-4 py-3 shadow-sm">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50">

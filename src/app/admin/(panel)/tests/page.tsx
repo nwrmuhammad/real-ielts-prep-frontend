@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Eye, EyeOff, BookOpen, Users, X } from "lucide-react";
 import { Test } from "@/types";
-import api from "@/lib/api";
+import { adminApi as api } from "@/lib/api";
 import toast from "react-hot-toast";
+import ConfirmModal from "@/components/ConfirmModal";
 
 function StatusDropdown({ status, onChange }: {
   status: "FREE" | "PREDICTED";
@@ -56,6 +57,7 @@ export default function AdminTestsPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", timeLimit: 60 });
   const [saving, setSaving] = useState(false);
+  const [confirmData, setConfirmData] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   useEffect(() => {
     api.get("/tests/admin/all").then((r) => setTests(r.data)).finally(() => setLoading(false));
@@ -65,7 +67,7 @@ export default function AdminTestsPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const { data } = await api.post("/tests", form);
+      const { data } = await api.post("/tests", { ...form, isPublished: true });
       setTests((prev) => [data, ...prev]);
       setForm({ title: "", description: "", timeLimit: 60 });
       setShowForm(false);
@@ -82,17 +84,23 @@ export default function AdminTestsPage() {
     } catch { toast.error("Failed to update"); }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Delete this test?")) return;
-    try {
-      await api.delete(`/tests/${id}`);
-      setTests((prev) => prev.filter((t) => t.id !== id));
-      toast.success("Deleted");
-    } catch { toast.error("Failed to delete"); }
+  function handleDelete(id: string) {
+    setConfirmData({
+      message: "Delete this test?",
+      onConfirm: async () => {
+        setConfirmData(null);
+        try {
+          await api.delete(`/tests/${id}`);
+          setTests((prev) => prev.filter((t) => t.id !== id));
+          toast.success("Deleted");
+        } catch { toast.error("Failed to delete"); }
+      },
+    });
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
+      {confirmData && <ConfirmModal message={confirmData.message} onConfirm={confirmData.onConfirm} onCancel={() => setConfirmData(null)} />}
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -148,14 +156,13 @@ export default function AdminTestsPage() {
       {loading ? (
         <div className="space-y-3">{[1,2,3].map((i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-gray-100" />)}</div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm">
           <table className="w-full text-sm">
             <thead className="border-b border-gray-100 bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-400">
               <tr>
                 <th className="px-6 py-4 text-left">Test</th>
                 <th className="px-4 py-4 text-center">Passages</th>
                 <th className="px-4 py-4 text-center">Submissions</th>
-                <th className="px-4 py-4 text-center">Status</th>
                 <th className="px-4 py-4 text-center">Type</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
@@ -178,13 +185,6 @@ export default function AdminTestsPage() {
                     </span>
                   </td>
                   <td className="px-4 py-4 text-center">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      test.isPublished ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
-                    }`}>
-                      {test.isPublished ? "Published" : "Draft"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 text-center">
                     <StatusDropdown
                       status={test.status}
                       onChange={async (next) => {
@@ -197,9 +197,10 @@ export default function AdminTestsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => togglePublish(test)} title={test.isPublished ? "Hide" : "Publish"}
-                        className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition">
-                        {test.isPublished ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      <button onClick={() => togglePublish(test)}
+                        title={test.isPublished ? "Studentlardan yashirish" : "Studentlarga ko'rsatish"}
+                        className={`rounded-lg p-2 transition ${test.isPublished ? "text-emerald-500 hover:bg-emerald-50" : "text-gray-300 hover:bg-gray-100 hover:text-gray-600"}`}>
+                        {test.isPublished ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                       </button>
                       <button onClick={() => router.push(`/admin/tests/${test.id}`)} title="Edit"
                         className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition">

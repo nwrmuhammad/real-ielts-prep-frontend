@@ -3,8 +3,9 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Plus, Trash2, ArrowLeft, ChevronDown, ChevronUp, X, Upload, FileText } from "lucide-react";
 import { Test, QuestionType } from "@/types";
-import api from "@/lib/api";
+import { adminApi as api } from "@/lib/api";
 import toast from "react-hot-toast";
+import ConfirmModal from "@/components/ConfirmModal";
 
 const QUESTION_TYPES: { value: QuestionType; label: string }[] = [
   { value: "MULTIPLE_CHOICE", label: "Multiple Choice" },
@@ -41,6 +42,7 @@ export default function AdminTestDetailPage() {
   const [expandedPassage, setExpandedPassage] = useState<string | null>(null);
   const [questionForms, setQuestionForms] = useState<Record<string, typeof emptyQuestion>>({});
   const [showQForms, setShowQForms] = useState<Record<string, boolean>>({});
+  const [confirmData, setConfirmData] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   useEffect(() => {
     api.get(`/tests/admin/${id}`).then((r) => {
@@ -136,16 +138,21 @@ export default function AdminTestDetailPage() {
     } catch { toast.error("Something went wrong"); }
   }
 
-  async function deleteQuestion(passageId: string, questionId: string) {
-    if (!confirm("Delete this question?")) return;
-    await api.delete(`/tests/questions/${questionId}`);
-    setTest((t) => t ? {
-      ...t,
-      passages: (t.passages ?? []).map((p) =>
-        p.id === passageId ? { ...p, questions: p.questions.filter((q) => q.id !== questionId) } : p
-      ),
-    } : t);
-    toast.success("Question deleted");
+  function deleteQuestion(passageId: string, questionId: string) {
+    setConfirmData({
+      message: "Delete this question?",
+      onConfirm: async () => {
+        setConfirmData(null);
+        await api.delete(`/tests/questions/${questionId}`);
+        setTest((t) => t ? {
+          ...t,
+          passages: (t.passages ?? []).map((p) =>
+            p.id === passageId ? { ...p, questions: p.questions.filter((q) => q.id !== questionId) } : p
+          ),
+        } : t);
+        toast.success("Question deleted");
+      },
+    });
   }
 
   if (loading) return (
@@ -157,6 +164,7 @@ export default function AdminTestDetailPage() {
 
   return (
     <div className="h-full overflow-y-auto">
+      {confirmData && <ConfirmModal message={confirmData.message} onConfirm={confirmData.onConfirm} onCancel={() => setConfirmData(null)} />}
     <div className="mx-auto max-w-6xl px-6 py-8">
       <button onClick={() => router.back()} className="mb-6 flex items-center gap-2 text-sm text-gray-500 hover:text-black transition">
         <ArrowLeft className="h-4 w-4" /> Back to Admin

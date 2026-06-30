@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Highlighter, X, Play, Pause } from "lucide-react";
+import { Highlighter, X, Play, Pause, ChevronLeft, Scan } from "lucide-react";
 import { Test, Question } from "@/types";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
@@ -21,8 +21,6 @@ interface WordPopup {
 
 const HIGHLIGHT_COLORS = [
   { bg: "#FEF08A", label: "Yellow", border: "#EAB308" },
-  { bg: "#86EFAC", label: "Green",  border: "#22C55E" },
-  { bg: "#FCA5A5", label: "Red",    border: "#EF4444" },
 ];
 
 // ─── Timer ───────────────────────────────────────────────
@@ -137,71 +135,117 @@ function renderPassage(text: string, highlights: Highlight[], onRemove: (id: str
 }
 
 // ─── QuestionBlock ────────────────────────────────────────
+const BLANK_RE = /_{3,}|\.{3,}|…+/;
+
 function QuestionBlock({ question, answer, onChange, flagged, onFlag, qHighlights, onRemoveQHighlight }: {
   question: Question; answer: string; onChange: (v: string) => void;
   flagged: boolean; onFlag: () => void;
   qHighlights: Highlight[]; onRemoveQHighlight: (hid: string) => void;
 }) {
-  const opts = question.options as string[] | undefined;
+  const rawOpts = question.options;
+  const opts = Array.isArray(rawOpts) ? (rawOpts as string[]) : undefined;
+  const isFIB = question.type === "FILL_IN_BLANK" || question.type === "SHORT_ANSWER";
+  const hasBlank = isFIB && BLANK_RE.test(question.questionText);
+  const parts = hasBlank ? question.questionText.split(BLANK_RE) : null;
+
   return (
     <div className="mb-8">
-      {/* Number + question text */}
-      <div className="flex items-start gap-3 mb-3">
+      {/* Question text */}
+      <div className="flex items-start gap-2 mb-3">
         <button onClick={onFlag} title="Flag for review"
           className={`flex-shrink-0 text-sm font-bold leading-relaxed transition-colors ${flagged ? "text-amber-500" : "text-black"}`}>
           {question.order}
         </button>
-        <p data-qid={question.id} className="text-sm text-black leading-relaxed select-text">
-          {renderWithHighlights(question.questionText, qHighlights, onRemoveQHighlight)}
-        </p>
+
+        {/* Inline blank input inside question text */}
+        {hasBlank && parts ? (
+          <p data-qid={question.id} className="text-sm text-black leading-8 select-text">
+            {parts.map((part, i) => (
+              <span key={i}>
+                {renderWithHighlights(part, qHighlights, onRemoveQHighlight)}
+                {i < parts.length - 1 && (
+                  <input
+                    type="text"
+                    value={answer}
+                    onChange={(e) => onChange(e.target.value)}
+                    placeholder={String(question.order)}
+                    className="mx-1 rounded border border-gray-300 bg-white px-2 py-0.5 text-center text-sm font-medium outline-none focus:border-black transition placeholder:text-gray-300 align-baseline"
+                    style={{ width: `${Math.max(120, answer.length * 9 + 16)}px` }}
+                  />
+                )}
+              </span>
+            ))}
+          </p>
+        ) : (
+          <p data-qid={question.id} className="text-sm text-black leading-relaxed select-text">
+            {renderWithHighlights(question.questionText, qHighlights, onRemoveQHighlight)}
+          </p>
+        )}
       </div>
 
       {/* TRUE / FALSE / NOT GIVEN */}
       {question.type === "TRUE_FALSE_NG" && (
-        <div className="ml-6 space-y-2">
+        <div className="ml-6 mt-2 flex flex-wrap gap-2">
           {["TRUE", "FALSE", "NOT GIVEN"].map((opt) => (
-            <label key={opt} className="flex cursor-pointer items-center gap-3">
-              <input type="radio" name={question.id} value={opt} checked={answer === opt}
-                onChange={() => onChange(opt)} className="h-4 w-4 cursor-pointer accent-gray-800 flex-shrink-0" />
-              <span className="text-sm text-black">{opt}</span>
-            </label>
+            <button key={opt} type="button"
+              onClick={() => onChange(answer === opt ? "" : opt)}
+              className={`rounded border px-4 py-1.5 text-xs font-bold tracking-wide transition-all ${
+                answer === opt
+                  ? "border-black bg-black text-white"
+                  : "border-gray-300 text-gray-700 hover:border-gray-500 hover:bg-gray-50"
+              }`}>
+              {opt}
+            </button>
           ))}
         </div>
       )}
 
       {/* MULTIPLE CHOICE */}
       {question.type === "MULTIPLE_CHOICE" && opts && (
-        <div className="ml-6 space-y-2">
-          {opts.map((opt) => (
-            <label key={opt} className="flex cursor-pointer items-start gap-3">
-              <input type="radio" name={question.id} value={opt[0]} checked={answer === opt[0]}
-                onChange={() => onChange(opt[0])} className="mt-0.5 h-4 w-4 cursor-pointer accent-gray-800 flex-shrink-0" />
-              <span className="text-sm text-black">{opt}</span>
-            </label>
-          ))}
-        </div>
-      )}
-
-      {/* FILL IN BLANK / SHORT ANSWER */}
-      {(question.type === "FILL_IN_BLANK" || question.type === "SHORT_ANSWER") && (
-        <div className="ml-6">
-          <input type="text" value={answer} onChange={(e) => onChange(e.target.value)}
-            placeholder="Your answer…"
-            className="rounded border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-gray-500 transition w-full max-w-xs" />
-        </div>
-      )}
-
-      {/* MATCHING HEADINGS */}
-      {question.type === "MATCHING_HEADINGS" && opts && (
-        <div className="ml-6 space-y-2">
+        <div className="ml-6 mt-2 space-y-2">
           {opts.map((opt) => {
-            const key = opt.split("–")[0].trim();
+            const letter = opt[0];
+            const text = opt.slice(1).replace(/^[\s.:)]+/, "");
             return (
-              <label key={opt} className="flex cursor-pointer items-start gap-3">
-                <input type="radio" name={question.id} value={key} checked={answer === key}
-                  onChange={() => onChange(key)} className="mt-0.5 h-4 w-4 cursor-pointer accent-gray-800 flex-shrink-0" />
-                <span className="text-sm text-black">{opt}</span>
-              </label>
+              <button key={opt} type="button"
+                onClick={() => onChange(answer === letter ? "" : letter)}
+                className={`flex w-full items-start gap-3 rounded border px-3.5 py-2.5 text-left text-sm transition-all ${
+                  answer === letter
+                    ? "border-black bg-black text-white"
+                    : "border-gray-200 text-black hover:border-gray-400 hover:bg-gray-50"
+                }`}>
+                <span className="font-bold shrink-0">{letter}</span>
+                <span>{text}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* FILL IN BLANK / SHORT ANSWER — fallback if no inline blank detected */}
+      {isFIB && !hasBlank && (
+        <div className="ml-6 mt-2">
+          <input type="text" value={answer} onChange={(e) => onChange(e.target.value)}
+            placeholder="Write your answer"
+            className="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-800 transition w-full max-w-sm" />
+        </div>
+      )}
+
+      {/* MATCHING HEADINGS — only key buttons (i, ii, iii…), list shown at group level */}
+      {question.type === "MATCHING_HEADINGS" && opts && (
+        <div className="ml-6 mt-2 flex flex-wrap gap-1.5">
+          {opts.map((opt) => {
+            const key = opt.split(/\s*[–-]\s*/)[0].trim();
+            return (
+              <button key={key} type="button"
+                onClick={() => onChange(answer === key ? "" : key)}
+                className={`min-w-[2.5rem] rounded border px-2.5 py-1 text-sm font-bold italic transition-all ${
+                  answer === key
+                    ? "border-black bg-black text-white"
+                    : "border-gray-300 text-black hover:border-gray-500 hover:bg-gray-50"
+                }`}>
+                {key}
+              </button>
             );
           })}
         </div>
@@ -210,13 +254,20 @@ function QuestionBlock({ question, answer, onChange, flagged, onFlag, qHighlight
       {/* MATCHING INFO */}
       {question.type === "MATCHING_INFO" && opts && (
         <div className="ml-6 flex flex-wrap gap-2">
-          {opts.map((opt) => (
-            <label key={opt} className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded border text-sm font-bold transition-all ${answer === opt ? "border-black bg-black text-white" : "border-gray-300 text-black hover:border-gray-500"}`}>
-              <input type="radio" name={question.id} value={opt} checked={answer === opt}
-                onChange={() => onChange(opt)} className="sr-only" />
-              {opt}
-            </label>
-          ))}
+          {opts.map((opt) => {
+            const m = opt.match(/^([A-Z])\s*[-–]?\s*/);
+            const letter = m ? m[1] : opt.charAt(0);
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => onChange(answer === letter ? "" : letter)}
+                className={`flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-bold transition-all ${answer === letter ? "border-black bg-black text-white" : "border-gray-200 text-black hover:border-gray-400 hover:bg-gray-50"}`}
+              >
+                {letter}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -236,6 +287,7 @@ export default function TestPage() {
   const [activePassage, setActivePassage] = useState(0);
   const [started, setStarted]     = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [highlights, setHighlights]           = useState<Record<string, Highlight[]>>({});
   const [questionHighlights, setQuestionHighlights] = useState<Record<string, Highlight[]>>({});
   const [tooltip, setTooltip]               = useState<TooltipState | null>(null);
@@ -244,11 +296,13 @@ export default function TestPage() {
   const [fontIdx, setFontIdx]     = useState(DEFAULT_FONT_IDX);
   const [wordPopup, setWordPopup] = useState<WordPopup | null>(null);
   const passageRef   = useRef<HTMLDivElement>(null);
+  const questionsRef = useRef<HTMLDivElement>(null);
   const startTimeRef = useRef<number>(0);
   const passageIdRef = useRef<string>("");
   const isDragging   = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [leftPct, setLeftPct] = useState(52);
+  const [leftPct, setLeftPct]   = useState(52);
+  const [mobileTab, setMobileTab] = useState<"passage" | "questions">("passage");
   const fontSize = FONT_SIZES[fontIdx];
 
   useEffect(() => { api.get(`/tests/${id}`).then((r) => setTest(r.data)); }, [id]);
@@ -285,6 +339,21 @@ export default function TestPage() {
       const sel = window.getSelection();
       if (!sel || sel.isCollapsed) { setTooltip(null); return; }
       const range = sel.getRangeAt(0);
+
+      // Snap to word boundaries
+      if (range.startContainer.nodeType === Node.TEXT_NODE) {
+        const t = range.startContainer.textContent ?? "";
+        let s = range.startOffset;
+        while (s > 0 && /\S/.test(t[s - 1])) s--;
+        range.setStart(range.startContainer, s);
+      }
+      if (range.endContainer.nodeType === Node.TEXT_NODE) {
+        const t = range.endContainer.textContent ?? "";
+        let e = range.endOffset;
+        while (e < t.length && /\S/.test(t[e])) e++;
+        range.setEnd(range.endContainer, e);
+      }
+
       const ancestor = range.commonAncestorContainer;
 
       // passage
@@ -413,9 +482,32 @@ export default function TestPage() {
     setQuestionHighlights((prev) => ({ ...prev, [qid]: (prev[qid] ?? []).filter((h) => h.id !== hid) }));
   }
 
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handler);
+    return () => {
+      document.removeEventListener("fullscreenchange", handler);
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    };
+  }, []);
+
   async function handleStart() {
     const { data } = await api.post("/results/start", { testId: id });
     setResultId(data.id); startTimeRef.current = Date.now(); setStarted(true);
+    try { await document.documentElement.requestFullscreen(); } catch {}
+  }
+
+  function exitTest() {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    router.back();
+  }
+
+  function toggleFullscreen() {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
   }
 
   const handleSubmit = useCallback(async () => {
@@ -430,7 +522,7 @@ export default function TestPage() {
 
   if (!test) return <div className="flex h-full items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-800" /></div>;
 
-  const allQuestions  = (test.passages ?? []).flatMap((p) => p.questions);
+  const allQuestions  = (test.passages ?? []).flatMap((p) => p.questions ?? []);
   const answeredCount = Object.values(answers).filter(Boolean).length;
 
   // Pre-test
@@ -439,6 +531,10 @@ export default function TestPage() {
     return (
       <div className="flex h-full items-center justify-center bg-white px-4">
         <div className="w-full max-w-sm rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <button onClick={() => router.back()}
+            className="mb-4 flex items-center gap-1 text-xs text-gray-400 hover:text-black transition">
+            <ChevronLeft className="h-3.5 w-3.5" /> Back
+          </button>
           <h1 className="mb-1 text-base font-bold text-black">{test.title}</h1>
           <p className="mb-5 text-xs text-gray-400">{test.timeLimit} min · {passages.length} passage{passages.length !== 1 ? "s" : ""} · {allQuestions.length} questions</p>
           {passages.length > 0 && (
@@ -460,20 +556,37 @@ export default function TestPage() {
   }
 
   const passages = test.passages ?? [];
-  const passage  = passages[activePassage];
+  const passage  = passages[activePassage] ?? passages[0];
+  if (!passage) return <div className="flex h-full items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-800" /></div>;
   passageIdRef.current = passage.id;
   const passageHighlights = highlights[passage.id] ?? [];
-  const firstQ = passage.questions[0];
-  const lastQ  = passage.questions[passage.questions.length - 1];
-  const isTFNG = passage.questions.every((q) => q.type === "TRUE_FALSE_NG");
-  const isFIB  = passage.questions.every((q) => q.type === "FILL_IN_BLANK" || q.type === "SHORT_ANSWER");
-  const isMC   = passage.questions.every((q) => q.type === "MULTIPLE_CHOICE");
-  const isMH   = passage.questions.every((q) => q.type === "MATCHING_HEADINGS");
-  const isMI   = passage.questions.every((q) => q.type === "MATCHING_INFO");
+  const pQuestions = passage.questions ?? [];
+  const firstQ = pQuestions[0];
+  const lastQ  = pQuestions[pQuestions.length - 1];
+  type QGroup = { type: string; instruction: string | undefined; questions: Question[]; firstOrder: number; lastOrder: number };
+  const matchingInfoGroupKey = (q: Question) => {
+    if (q.type !== "MATCHING_INFO") return null;
+    const hasNames = Array.isArray(q.options) &&
+      (q.options as string[]).some((o) => o.replace(/^[A-Z]\s*[-–]?\s*/, "").trim().length > 0);
+    return hasNames ? "people" : "paragraph";
+  };
+  const questionGroups = pQuestions.reduce<QGroup[]>((acc, q) => {
+    const last = acc[acc.length - 1];
+    const sameGroup = last && last.type === q.type && (
+      q.type === "MATCHING_INFO"
+        ? matchingInfoGroupKey(last.questions[0]) === matchingInfoGroupKey(q)
+        : last.instruction === q.instruction
+    );
+    if (sameGroup) {
+      last.questions.push(q); last.lastOrder = q.order;
+    } else {
+      acc.push({ type: q.type, instruction: q.instruction, questions: [q], firstOrder: q.order, lastOrder: q.order });
+    }
+    return acc;
+  }, []);
 
   return (
-    <div className="flex h-full flex-col bg-white">
-
+    <div className="flex h-full flex-col bg-white" style={{ ["--mobile-tab" as string]: mobileTab }}>
       {/* Word popup */}
       {wordPopup && (
         <div
@@ -532,26 +645,29 @@ export default function TestPage() {
 
       {/* Highlight tooltip */}
       {tooltip && (
-        <div data-highlight-toolbar style={{ position: "fixed", left: tooltip.x, top: tooltip.y, transform: "translateX(-50%)", zIndex: 999 }}
-          className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 shadow-2xl">
-          <Highlighter className="h-3.5 w-3.5 text-slate-400" />
-          {HIGHLIGHT_COLORS.map(({ bg, label, border }) => (
-            <button key={bg} onClick={() => addHighlight(bg)} title={`Highlight ${label}`}
-              style={{ backgroundColor: bg, borderColor: border }}
-              className="h-5 w-5 rounded-full border-2 hover:scale-125 transition-transform" />
-          ))}
-          <div className="mx-1 h-4 w-px bg-slate-600" />
-          <button onClick={() => setTooltip(null)} className="text-slate-400 hover:text-white transition"><X className="h-3.5 w-3.5" /></button>
+        <div data-highlight-toolbar style={{ position: "fixed", left: tooltip.x, top: tooltip.y, transform: "translateX(-50%)", zIndex: 999 }}>
+          <button onClick={() => addHighlight("#FEF08A")}
+            style={{ borderRadius: "4px" }}
+            className="flex items-center gap-1.5 bg-white shadow-lg border border-gray-100 px-3 py-2 hover:bg-gray-50 transition-colors">
+            <Highlighter className="h-5 w-5 text-black" />
+            <span className="text-xs font-semibold text-gray-700">Highlight</span>
+          </button>
         </div>
       )}
 
-      {/* Top bar — minimal */}
-      <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-100 px-8 py-2.5">
-        <span className="text-sm font-semibold text-black">{test.title}</span>
-        <div className="flex items-center gap-3">
+      {/* Top bar */}
+      <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-100 px-3 sm:px-8 py-2.5 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <button onClick={exitTest}
+            className="flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition shrink-0">
+            <ChevronLeft className="h-3.5 w-3.5" /> Back
+          </button>
+          <span className="text-xs sm:text-sm font-semibold text-black truncate max-w-[100px] sm:max-w-xs">{test.title}</span>
+        </div>
+        <div className="flex items-center gap-1.5 sm:gap-3">
           <Timer seconds={test.timeLimit * 60} onExpire={handleSubmit} />
-          {/* Font size */}
-          <div className="flex items-center gap-0.5 rounded border border-gray-200 px-1 py-0.5">
+          {/* Font size — hidden on mobile */}
+          <div className="hidden sm:flex items-center gap-0.5 rounded border border-gray-200 px-1 py-0.5">
             <button onClick={() => setFontIdx((i) => Math.max(0, i - 1))} disabled={fontIdx === 0}
               className="flex h-5 w-5 items-center justify-center text-xs font-bold text-gray-400 disabled:opacity-30 hover:text-black transition">
               A<span className="text-[8px]">−</span>
@@ -562,117 +678,248 @@ export default function TestPage() {
             </button>
           </div>
         </div>
-        <button onClick={handleSubmit} disabled={submitting}
-          className="rounded-lg border border-gray-200 px-5 py-1.5 text-sm font-semibold text-black hover:bg-gray-50 disabled:opacity-50 transition">
-          {submitting ? "Submitting…" : "Submit"}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button onClick={toggleFullscreen} title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+            className="flex items-center justify-center rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-50 hover:text-black transition">
+            {isFullscreen ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 3v6H3"/><path d="M15 3v6h6"/><path d="M9 21v-6H3"/><path d="M15 21v-6h6"/>
+              </svg>
+            ) : (
+              <Scan className="h-5 w-5" />
+            )}
+          </button>
+          <button onClick={handleSubmit} disabled={submitting}
+            className="rounded-lg border border-gray-200 px-3 sm:px-5 py-1.5 text-xs sm:text-sm font-semibold text-black hover:bg-gray-50 disabled:opacity-50 transition">
+            {submitting ? "…" : "Submit"}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile tab toggle */}
+      <div className="flex sm:hidden shrink-0 border-b border-gray-100 bg-gray-50">
+        <button onClick={() => setMobileTab("passage")}
+          className={`flex-1 py-2.5 text-xs font-semibold transition ${mobileTab === "passage" ? "text-black border-b-2 border-black bg-white" : "text-gray-400"}`}>
+          Passage
+        </button>
+        <button onClick={() => setMobileTab("questions")}
+          className={`flex-1 py-2.5 text-xs font-semibold transition ${mobileTab === "questions" ? "text-black border-b-2 border-black bg-white" : "text-gray-400"}`}>
+          Questions ({pQuestions.filter((q) => answers[q.id]).length}/{pQuestions.length})
         </button>
       </div>
 
-      {/* Two-column content */}
+      {/* Two-column content — desktop | single pane mobile */}
       <div ref={containerRef} className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* Left — passage */}
-        <div className="overflow-y-auto"
-          style={{ width: `${leftPct}%`, fontSize: `${fontSize}px` }}>
-          <div className="mx-auto w-[95%] px-4 py-10 leading-8 font-medium text-black">
-            <p className="mb-1 text-sm font-bold uppercase tracking-wide text-black">PASSAGE {passage.order}</p>
-            <p className="mb-6 text-xs text-gray-500 leading-relaxed">
-              You should spend about {test.timeLimit} minutes on Questions {firstQ?.order}–{lastQ?.order}, which are based on Reading Passage {passage.order} below.
+        <div className={`overflow-y-auto ${mobileTab === "passage" ? "flex" : "hidden"} sm:flex flex-col`}
+          style={{ width: typeof window !== "undefined" && window.innerWidth >= 640 ? `${leftPct}%` : "100%", fontSize: `${fontSize}px` }}>
+          <div className="mx-auto w-full max-w-2xl px-4 sm:px-6 py-6 sm:py-10 leading-7 sm:leading-8 font-medium text-black">
+            <p className="mb-1 text-xs sm:text-sm font-bold uppercase tracking-wide text-black">PASSAGE {passage.order}</p>
+            <p className="mb-4 sm:mb-6 text-xs text-gray-500 leading-relaxed">
+              Questions {firstQ?.order}–{lastQ?.order} are based on Reading Passage {passage.order} below.
             </p>
-            <h2 className="mb-7 text-center font-bold leading-snug text-black" style={{ fontSize: `${fontSize + 2}px` }}>
+            <h2 className="mb-5 sm:mb-7 text-center font-bold leading-snug text-black" style={{ fontSize: `${fontSize + 2}px` }}>
               {passage.title}
             </h2>
-            <div
-              ref={passageRef}
-              style={{ userSelect: "text" }}
-              className="selection:bg-yellow-200 cursor-pointer"
-              onClick={handleWordClick}
-            >
+            <div ref={passageRef} style={{ userSelect: "text" }} className="selection:bg-yellow-200 cursor-pointer" onClick={handleWordClick}>
               {renderPassage(passage.content, passageHighlights, removeHighlight)}
             </div>
+            {/* Mobile: go to questions button */}
+            <button onClick={() => setMobileTab("questions")}
+              className="mt-8 flex sm:hidden w-full items-center justify-center gap-2 rounded-full bg-black py-3 text-sm font-bold text-white">
+              Go to Questions →
+            </button>
           </div>
         </div>
 
-        {/* Drag handle */}
+        {/* Drag handle — desktop only */}
         <div onMouseDown={(e) => { e.preventDefault(); isDragging.current = true; document.body.style.cursor = "col-resize"; document.body.style.userSelect = "none"; }}
-          className="w-px flex-shrink-0 cursor-col-resize bg-gray-100 hover:bg-gray-300 transition-colors" />
+          className="hidden sm:block w-px flex-shrink-0 cursor-col-resize bg-gray-100 hover:bg-gray-300 transition-colors" />
 
         {/* Right — questions */}
-        <div className="flex-1 overflow-y-auto px-10 py-8">
+        <div ref={questionsRef} className={`overflow-y-auto ${mobileTab === "questions" ? "flex" : "hidden"} sm:flex flex-col flex-1`}>
+          <div className="px-4 sm:px-8 py-6 sm:py-8">
 
-          {/* Questions header */}
-          <p className="mb-3 text-base font-bold text-black">Questions {firstQ?.order}–{lastQ?.order}</p>
+            {questionGroups.map((group, gi) => {
+              const rawGroupOpts = group.questions[0]?.options;
+              const opts = Array.isArray(rawGroupOpts) ? (rawGroupOpts as string[]) : undefined;
+              const lastLetter = opts?.length ? String.fromCharCode(64 + opts.length) : "G";
+              const range = group.firstOrder === group.lastOrder
+                ? `${group.firstOrder}`
+                : `${group.firstOrder}–${group.lastOrder}`;
+              // MATCHING_INFO has two IELTS sub-types: bare letters ("A") = match-to-paragraph,
+              // "letter - name" pairs ("A - John") = match-to-person/category
+              const matchingInfoHasNames = opts?.some((o) => o.replace(/^[A-Z]\s*[-–]?\s*/, "").trim().length > 0) ?? false;
 
-          {/* Instructions */}
-          {isTFNG && (
-            <div className="mb-6 text-sm text-black space-y-1">
-              <p>Do the following statements agree with the information given in the text?</p>
-              <p className="mt-1">In boxes {firstQ?.order}–{lastQ?.order} on your answer sheet, choose</p>
-              <div className="mt-3 space-y-1.5">
-                <p><strong>TRUE</strong><span className="ml-6 italic text-gray-600">if the statement agrees with the information</span></p>
-                <p><strong>FALSE</strong><span className="ml-4 italic text-gray-600">if the statement contradicts the information</span></p>
-                <p><strong>NOT GIVEN</strong><span className="ml-2 italic text-gray-600">if there is no information on this</span></p>
-              </div>
-            </div>
-          )}
-          {isFIB && (
-            <div className="mb-6 text-sm text-black space-y-1">
-              <p>Complete the sentences below.</p>
-              {firstQ?.instruction && <p>Choose <strong>{firstQ.instruction}</strong> for each answer.</p>}
-            </div>
-          )}
-          {isMC && <p className="mb-6 text-sm text-black">Choose the correct letter, <strong>A</strong>, <strong>B</strong>, <strong>C</strong> or <strong>D</strong>.</p>}
-          {isMH && (
-            <div className="mb-6 text-sm text-black space-y-1">
-              <p>The reading passage has several paragraphs.</p>
-              <p>Choose the correct heading for each paragraph from the list.</p>
-            </div>
-          )}
-          {isMI && <p className="mb-6 text-sm text-black">Match each statement with the correct paragraph letter.</p>}
-          {!isTFNG && !isFIB && !isMC && !isMH && !isMI && firstQ?.instruction && (
-            <p className="mb-6 text-sm text-black">{firstQ.instruction}</p>
-          )}
+              return (
+                <div key={gi} className={gi > 0 ? "mt-12" : ""}>
 
-          <div className="h-px bg-gray-100 mb-6" />
+                  {/* Group header */}
+                  <div className="mb-4 border-b-2 border-gray-800 pb-2">
+                    <p className="text-base font-bold text-black">Questions {range}</p>
+                  </div>
 
-          {/* Question list */}
-          {passage.questions.map((q, idx) => {
-            const prevInstr = idx > 0 ? passage.questions[idx - 1].instruction : null;
-            const showInstr = !isTFNG && q.instruction && q.instruction !== prevInstr && idx > 0;
-            return (
-              <div key={q.id}>
-                {showInstr && <p className="mb-3 mt-1 text-sm text-black">{q.instruction}</p>}
-                <QuestionBlock
-                  question={q}
-                  answer={answers[q.id] ?? ""}
-                  onChange={(v) => setAnswers((prev) => ({ ...prev, [q.id]: v }))}
-                  flagged={flagged.has(q.id)}
-                  onFlag={() => setFlagged((prev) => {
-                    const next = new Set(prev);
-                    next.has(q.id) ? next.delete(q.id) : next.add(q.id);
-                    return next;
-                  })}
-                  qHighlights={questionHighlights[q.id] ?? []}
-                  onRemoveQHighlight={(hid) => removeQuestionHighlight(q.id, hid)}
-                />
-              </div>
-            );
-          })}
-          <div className="h-16" />
+                  {/* Type-specific instruction */}
+                  {group.type === "TRUE_FALSE_NG" && (
+                    <div className="mb-6 text-sm text-black leading-relaxed space-y-1.5">
+                      <p><em>Do the following statements agree with the information given in Reading Passage {passage.order}?</em></p>
+                      <p><em>In boxes <strong>{range}</strong> on your answer sheet, write</em></p>
+                      <div className="mt-2 space-y-1 pl-2 border-l-2 border-gray-300">
+                        <div className="flex gap-3"><span className="font-bold w-24 shrink-0 text-black">TRUE</span><span className="text-gray-600">if the statement agrees with the information</span></div>
+                        <div className="flex gap-3"><span className="font-bold w-24 shrink-0 text-black">FALSE</span><span className="text-gray-600">if the statement contradicts the information</span></div>
+                        <div className="flex gap-3"><span className="font-bold w-24 shrink-0 text-black">NOT GIVEN</span><span className="text-gray-600">if there is no information on this</span></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {(group.type === "FILL_IN_BLANK" || group.type === "SHORT_ANSWER") && (
+                    <div className="mb-6 text-sm text-black leading-relaxed space-y-1">
+                      <p><em>Complete the notes below.</em></p>
+                      {group.instruction
+                        ? <p><em>Choose <strong>NO MORE THAN {group.instruction}</strong> from the passage for each answer.</em></p>
+                        : <p><em>Choose <strong>NO MORE THAN THREE WORDS AND/OR A NUMBER</strong> from the passage for each answer.</em></p>
+                      }
+                      <p><em>Write your answers in boxes <strong>{range}</strong> on your answer sheet.</em></p>
+                    </div>
+                  )}
+
+                  {group.type === "MULTIPLE_CHOICE" && (
+                    <div className="mb-6 text-sm text-black leading-relaxed space-y-1">
+                      <p><em>Choose the correct letter, <strong>A</strong>, <strong>B</strong>, <strong>C</strong> or <strong>D</strong>.</em></p>
+                      <p><em>Write the correct letter in box{group.questions.length > 1 ? `es <strong>${range}</strong>` : ` <strong>${range}</strong>`} on your answer sheet.</em></p>
+                    </div>
+                  )}
+
+                  {group.type === "MATCHING_HEADINGS" && (
+                    <div className="mb-6 text-sm text-black leading-relaxed space-y-1">
+                      <p><em>The reading passage has several paragraphs, <strong>A–{String.fromCharCode(64 + group.questions.length)}</strong>.</em></p>
+                      <p><em>Choose the correct heading for each paragraph from the list of headings below.</em></p>
+                      <p><em>Write the correct number, <strong>i–{opts?.[opts.length - 1]?.split(/\s*[–-]\s*/)[0].trim() ?? "ix"}</strong>, in boxes <strong>{range}</strong> on your answer sheet.</em></p>
+                      {opts && (
+                        <div className="mt-4 overflow-hidden rounded border border-gray-300">
+                          <div className="border-b border-gray-300 bg-gray-100 py-2 text-center text-xs font-bold uppercase tracking-widest text-black">
+                            List of Headings
+                          </div>
+                          <div className="divide-y divide-gray-100 bg-white">
+                            {opts.map((opt) => {
+                              const dashIdx = opt.search(/\s*[–-]\s*/);
+                              const key = dashIdx !== -1 ? opt.slice(0, dashIdx).trim() : opt;
+                              const label = dashIdx !== -1 ? opt.slice(opt.match(/\s*[–-]\s*/)![0].length + dashIdx).trim() : "";
+                              return (
+                                <div key={opt} className="flex gap-4 px-4 py-2.5 text-sm leading-snug">
+                                  <span className="w-6 shrink-0 font-bold italic text-black">{key}</span>
+                                  <span className="text-black">{label || opt}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {group.type === "MATCHING_INFO" && (
+                    <div className="mb-6 text-sm text-black leading-relaxed space-y-1">
+                      {matchingInfoHasNames ? (
+                        <>
+                          <p><em>Look at the following statements (Questions <strong>{range}</strong>) and the list of people below.</em></p>
+                          <p><em>Match each statement with the correct person, <strong>A–{lastLetter}</strong>.</em></p>
+                          <p><em>Write the correct letter, <strong>A–{lastLetter}</strong>, in boxes <strong>{range}</strong> on your answer sheet.</em></p>
+                          <p className="text-xs text-gray-500 italic">NB  You may use any letter more than once.</p>
+                        </>
+                      ) : (
+                        <>
+                          <p><em>Reading Passage {passage.order} has several paragraphs, <strong>A–{lastLetter}</strong>.</em></p>
+                          <p><em>Which paragraph contains the following information?</em></p>
+                          <p><em>Write the correct letter, <strong>A–{lastLetter}</strong>, in boxes <strong>{range}</strong> on your answer sheet.</em></p>
+                          <p className="text-xs text-gray-500 italic">NB  You may use any letter more than once.</p>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Questions in this group */}
+                  {group.questions.map((q) => (
+                    <div key={q.id} id={`q-${q.id}`}>
+                      <QuestionBlock
+                        question={q}
+                        answer={answers[q.id] ?? ""}
+                        onChange={(v) => setAnswers((prev) => ({ ...prev, [q.id]: v }))}
+                        flagged={flagged.has(q.id)}
+                        onFlag={() => setFlagged((prev) => {
+                          const next = new Set(prev);
+                          next.has(q.id) ? next.delete(q.id) : next.add(q.id);
+                          return next;
+                        })}
+                        qHighlights={questionHighlights[q.id] ?? []}
+                        onRemoveQHighlight={(hid) => removeQuestionHighlight(q.id, hid)}
+                      />
+                    </div>
+                  ))}
+
+                  {/* List of People — shown after the questions, matching the real exam layout */}
+                  {group.type === "MATCHING_INFO" && matchingInfoHasNames && opts && (
+                    <div className="mt-2 ml-6 max-w-xs overflow-hidden rounded border border-gray-300">
+                      <div className="border-b border-gray-300 bg-gray-100 py-2 text-center text-sm font-bold text-black">
+                        List of People
+                      </div>
+                      <div className="divide-y divide-gray-100 bg-white px-4 py-2">
+                        {opts.map((opt) => {
+                          const m = opt.match(/^([A-Z])\s*[-–]?\s*/);
+                          const letter = m ? m[1] : opt.charAt(0);
+                          const name = m ? opt.slice(m[0].length).trim() : opt.slice(1).trim();
+                          return (
+                            <div key={opt} className="flex gap-5 py-1.5 text-sm">
+                              <span className="w-4 shrink-0 font-bold text-black">{letter}</span>
+                              <span className="text-black">{name}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <div className="h-8" />
+          </div>
         </div>
       </div>
 
       {/* Bottom — passage tabs */}
-      <div className="flex flex-shrink-0 items-center justify-between border-t border-gray-100 bg-white px-8 py-3">
-        <span className="text-xs text-gray-400">{answeredCount}/{allQuestions.length} answered</span>
+      <div className="flex flex-shrink-0 flex-col sm:flex-row items-center justify-between gap-2 border-t border-gray-100 bg-white px-3 sm:px-8 py-2 sm:py-3">
+        <span className="hidden sm:block text-xs text-gray-400">{answeredCount}/{allQuestions.length} answered</span>
+
+        <div className="hidden sm:flex flex-wrap gap-1">
+          {pQuestions.map((q) => (
+            <button
+              key={q.id}
+              onClick={() => {
+                setMobileTab("questions");
+                setTimeout(() => {
+                  document.getElementById(`q-${q.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }, 50);
+              }}
+              title={`Q${q.order}`}
+              className={`flex h-7 w-7 items-center justify-center rounded text-[12px] font-bold transition-colors ${
+                flagged.has(q.id) ? "bg-amber-400 text-white" :
+                answers[q.id]    ? "bg-black text-white" :
+                "bg-gray-100 text-gray-400 hover:bg-gray-200"
+              }`}
+            >
+              {q.order}
+            </button>
+          ))}
+        </div>
 
         <div className="flex items-center gap-1 rounded-full border border-gray-200 p-0.5">
           {passages.map((p, i) => {
-            const done = p.questions.filter((q) => answers[q.id]).length;
+            const done = (p.questions ?? []).filter((q) => answers[q.id]).length;
             const active = activePassage === i;
             return (
-              <button key={p.id} onClick={() => setActivePassage(i)}
-                className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition-all ${active ? "bg-black text-white shadow-sm" : "text-gray-500 hover:text-black"}`}>
+              <button key={p.id} onClick={() => { setActivePassage(i); setMobileTab("passage"); }}
+                className={`flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold transition-all ${active ? "bg-black text-white shadow-sm" : "text-gray-500 hover:text-black"}`}>
                 {i + 1}
                 <span className={`text-xs font-normal ${active ? "text-gray-300" : "text-gray-400"}`}>{done}/{p.questions.length}</span>
               </button>
@@ -680,12 +927,6 @@ export default function TestPage() {
           })}
         </div>
 
-        <div className="flex gap-1">
-          {allQuestions.map((q) => (
-            <div key={q.id} title={`Q${q.order}`}
-              className={`h-2 w-2 rounded-full border transition-colors ${flagged.has(q.id) ? "border-amber-400 bg-amber-300" : answers[q.id] ? "border-black bg-black" : "border-gray-200 bg-white"}`} />
-          ))}
-        </div>
       </div>
     </div>
   );
