@@ -9,8 +9,9 @@ import ConfirmModal from "@/components/ConfirmModal";
 type QuestionDraft = {
   questionText: string;
   correctAnswer: string;
-  type: "SHORT_ANSWER" | "FILL_IN_BLANK" | "MULTIPLE_CHOICE" | "TRUE_FALSE_NG";
+  type: "SHORT_ANSWER" | "FILL_IN_BLANK" | "MULTIPLE_CHOICE" | "TRUE_FALSE_NG" | "MATCHING_INFO";
   options: string[];
+  instruction: string;
 };
 
 type PredTest = {
@@ -30,7 +31,7 @@ type PassageDetail = {
   questions: { id: string; order: number; questionText: string; correctAnswer: string; type: string }[];
 };
 
-const EMPTY_QUESTION: QuestionDraft = { questionText: "", correctAnswer: "", type: "SHORT_ANSWER", options: [] };
+const EMPTY_QUESTION: QuestionDraft = { questionText: "", correctAnswer: "", type: "SHORT_ANSWER", options: [], instruction: "" };
 
 export default function AdminPredictedPage() {
   const router = useRouter();
@@ -86,6 +87,8 @@ export default function AdminPredictedPage() {
     const validQs = questions.filter((q) => q.questionText.trim() && q.correctAnswer.trim());
     if (!passageContent.trim()) { toast.error("Passage matnini kiriting"); return; }
     if (validQs.length === 0) { toast.error("Kamida 1 ta savol kiriting"); return; }
+    const missingInstruction = validQs.findIndex((q) => q.type === "FILL_IN_BLANK" && !q.instruction);
+    if (missingInstruction !== -1) { toast.error(`${missingInstruction + 1}-savol uchun instruction tanlang!`); return; }
 
     setCreating(true);
     const tid = toast.loading("Test yaratilmoqda…");
@@ -114,7 +117,8 @@ export default function AdminPredictedPage() {
             type: q.type,
             questionText: q.questionText.trim(),
             correctAnswer: q.correctAnswer.trim(),
-            options: q.type === "MULTIPLE_CHOICE" ? q.options.filter(Boolean) : null,
+            instruction: q.type === "FILL_IN_BLANK" ? q.instruction : undefined,
+            options: (q.type === "MULTIPLE_CHOICE" || q.type === "MATCHING_INFO") ? q.options.filter(Boolean) : null,
             points: 1,
           })
         )
@@ -279,13 +283,18 @@ export default function AdminPredictedPage() {
                         {/* Type */}
                         <select
                           value={q.type}
-                          onChange={(e) => updateQuestion(idx, { type: e.target.value as QuestionDraft["type"] })}
+                          onChange={(e) => {
+                            const t = e.target.value as QuestionDraft["type"];
+                            const opts = t === "MULTIPLE_CHOICE" ? ["A) ", "B) ", "C) ", "D) "] : t === "MATCHING_INFO" ? ["A - "] : [];
+                            updateQuestion(idx, { type: t, instruction: "", options: opts });
+                          }}
                           className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
                         >
                           <option value="SHORT_ANSWER">Short Answer</option>
                           <option value="FILL_IN_BLANK">Fill in Blank</option>
                           <option value="MULTIPLE_CHOICE">Multiple Choice</option>
                           <option value="TRUE_FALSE_NG">True / False / NG</option>
+                          <option value="MATCHING_INFO">Matching Info</option>
                         </select>
 
                         {/* Answer */}
@@ -318,6 +327,54 @@ export default function AdminPredictedPage() {
                             />
                           ))}
                         </div>
+                      )}
+
+                      {/* MATCHING_INFO options */}
+                      {q.type === "MATCHING_INFO" && (
+                        <div className="space-y-1.5">
+                          <p className="text-xs text-gray-500">Options <span className="text-gray-400">(e.g. "A - John Smith" yoki "A")</span></p>
+                          {q.options.map((opt, i) => (
+                            <div key={i} className="flex gap-1.5">
+                              <input
+                                value={opt}
+                                onChange={(e) => {
+                                  const opts = [...q.options];
+                                  opts[i] = e.target.value;
+                                  updateQuestion(idx, { options: opts });
+                                }}
+                                placeholder="A - Name yoki A"
+                                className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
+                              />
+                              <button type="button"
+                                onClick={() => updateQuestion(idx, { options: q.options.filter((_, j) => j !== i) })}
+                                className="rounded-lg px-2 text-gray-300 hover:text-red-500 transition">✕</button>
+                            </div>
+                          ))}
+                          <button type="button"
+                            onClick={() => {
+                              const letters = "ABCDEFGHIJ";
+                              const next = letters[q.options.length] ?? "?";
+                              updateQuestion(idx, { options: [...q.options, `${next} - `] });
+                            }}
+                            className="text-xs font-medium text-gray-400 hover:text-black transition">+ Option qo'shish</button>
+                        </div>
+                      )}
+
+                      {/* Instruction dropdown for FILL_IN_BLANK */}
+                      {q.type === "FILL_IN_BLANK" && (
+                        <select
+                          value={q.instruction}
+                          onChange={(e) => updateQuestion(idx, { instruction: e.target.value })}
+                          className="w-full rounded-lg border border-amber-200 bg-amber-50/40 px-3 py-2.5 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition"
+                        >
+                          <option value="" disabled>— Instruction turini tanlang —</option>
+                          <option value="ONE WORD ONLY">ONE WORD ONLY</option>
+                          <option value="ONE WORD AND/OR A NUMBER">ONE WORD AND/OR A NUMBER</option>
+                          <option value="NO MORE THAN TWO WORDS">NO MORE THAN TWO WORDS</option>
+                          <option value="NO MORE THAN TWO WORDS AND/OR A NUMBER">NO MORE THAN TWO WORDS AND/OR A NUMBER</option>
+                          <option value="NO MORE THAN THREE WORDS">NO MORE THAN THREE WORDS</option>
+                          <option value="NO MORE THAN THREE WORDS AND/OR A NUMBER">NO MORE THAN THREE WORDS AND/OR A NUMBER</option>
+                        </select>
                       )}
                     </div>
                   </div>

@@ -10,7 +10,7 @@ interface User {
   name: string;
   email: string;
   role: "USER" | "ADMIN";
-  tariff: "XAVASKOR" | "ERKATOY";
+  tariff: "XAVASKOR" | "AMATEUR" | "ERKATOY";
   tariffExpiresAt?: string | null;
   createdAt: string;
   _count: { testResults: number };
@@ -23,16 +23,23 @@ function daysLeft(expiresAt?: string | null): number | null {
 }
 
 // ─── Tariff modal ─────────────────────────────────────────────
+const TARIFF_OPTIONS = [
+  { value: "XAVASKOR" as const, label: "Free", emoji: "🎯", desc: "10 ta practice test", color: "border-gray-300 bg-gray-50", active: "border-gray-500 bg-gray-100", badge: "bg-gray-500" },
+  { value: "AMATEUR"  as const, label: "Lite", emoji: "📚", desc: "Barcha Volume testlar · 30 kun", color: "border-blue-200 bg-blue-50", active: "border-blue-500 bg-blue-100", badge: "bg-blue-500" },
+  { value: "ERKATOY"  as const, label: "Pro",  emoji: "⭐", desc: "Volume + Predicted · 30 kun", color: "border-purple-200 bg-purple-50", active: "border-purple-500 bg-purple-100", badge: "bg-purple-500" },
+];
+
 function TariffModal({ user, onClose, onSave }: { user: User; onClose: () => void; onSave: (u: User) => void }) {
   const [saving, setSaving] = useState(false);
 
-  async function set(tariff: "XAVASKOR" | "ERKATOY") {
+  async function set(tariff: "XAVASKOR" | "AMATEUR" | "ERKATOY") {
     if (tariff === user.tariff) { onClose(); return; }
     setSaving(true);
     try {
       const { data } = await api.put(`/users/${user.id}`, { tariff });
       onSave({ ...user, tariff: data.tariff, tariffExpiresAt: data.tariffExpiresAt });
-      toast.success(`Tariff "${tariff === "ERKATOY" ? "Erkatoy" : "Xavaskor"}" ga o'zgartirildi`);
+      const label = TARIFF_OPTIONS.find(o => o.value === tariff)?.label ?? tariff;
+      toast.success(`Tariff "${label}" ga o'zgartirildi`);
       onClose();
     } catch { toast.error("Xatolik yuz berdi"); }
     finally { setSaving(false); }
@@ -46,28 +53,26 @@ function TariffModal({ user, onClose, onSave }: { user: User; onClose: () => voi
           <button onClick={onClose} className="text-gray-400 hover:text-gray-900 transition"><X className="h-5 w-5" /></button>
         </div>
         <p className="mb-5 text-sm text-gray-400">{user.name} · {user.email}</p>
-        <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => set("XAVASKOR")} disabled={saving}
-            className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-5 transition hover:shadow-md disabled:opacity-60 ${user.tariff === "XAVASKOR" ? "border-amber-400 bg-amber-50" : "border-gray-200 hover:border-amber-300"}`}>
-            <span className="text-2xl">🎯</span>
-            <span className="font-bold text-gray-900 text-sm">Xavaskor</span>
-            <span className="text-xs text-gray-400 text-center">Free tests only</span>
-            {user.tariff === "XAVASKOR" && <span className="rounded-full bg-amber-400 px-2 py-0.5 text-xs font-bold text-white">Active</span>}
-          </button>
-          <button onClick={() => set("ERKATOY")} disabled={saving}
-            className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-5 transition hover:shadow-md disabled:opacity-60 ${user.tariff === "ERKATOY" ? "border-purple-500 bg-purple-50" : "border-gray-200 hover:border-purple-300"}`}>
-            <span className="text-2xl">⭐</span>
-            <span className="font-bold text-gray-900 text-sm">Erkatoy</span>
-            <span className="text-xs text-gray-400 text-center">All tests + Predicted</span>
-            {user.tariff === "ERKATOY" && (
-              <>
-                <span className="rounded-full bg-purple-500 px-2 py-0.5 text-xs font-bold text-white">Active</span>
-                {daysLeft(user.tariffExpiresAt) !== null && (
-                  <span className="text-xs text-purple-500 font-medium">{daysLeft(user.tariffExpiresAt)} kun qoldi</span>
-                )}
-              </>
-            )}
-          </button>
+        <div className="flex flex-col gap-3">
+          {TARIFF_OPTIONS.map((opt) => {
+            const isActive = user.tariff === opt.value;
+            return (
+              <button key={opt.value} onClick={() => set(opt.value)} disabled={saving}
+                className={`flex items-center gap-3 rounded-2xl border-2 px-4 py-3.5 transition hover:shadow-md disabled:opacity-60 text-left ${isActive ? opt.active : opt.color}`}>
+                <span className="text-2xl">{opt.emoji}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-gray-900 text-sm">{opt.label}</span>
+                    {isActive && <span className={`rounded-full ${opt.badge} px-2 py-0.5 text-xs font-bold text-white`}>Active</span>}
+                    {isActive && opt.value !== "XAVASKOR" && daysLeft(user.tariffExpiresAt) !== null && (
+                      <span className="text-xs text-gray-500 font-medium">{daysLeft(user.tariffExpiresAt)} kun qoldi</span>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-400">{opt.desc}</span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -268,14 +273,16 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="px-4 py-4 text-center">
                     <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      (u.tariff ?? "XAVASKOR") === "ERKATOY" ? "bg-purple-100 text-purple-700" : "bg-amber-100 text-amber-700"
+                      u.tariff === "ERKATOY" ? "bg-purple-100 text-purple-700" :
+                      u.tariff === "AMATEUR"  ? "bg-blue-100 text-blue-700" :
+                      "bg-gray-100 text-gray-600"
                     }`}>
-                      {(u.tariff ?? "XAVASKOR") === "ERKATOY" ? "Erkatoy" : "Xavaskor"}
+                      {u.tariff === "ERKATOY" ? "Pro" : u.tariff === "AMATEUR" ? "Lite" : "Free"}
                     </span>
                   </td>
                   <td className="px-4 py-4 text-center text-gray-500">{u._count.testResults}</td>
                   <td className="px-4 py-4 text-center text-xs">
-                    {u.tariff === "ERKATOY" && u.tariffExpiresAt ? (
+                    {(u.tariff === "ERKATOY" || u.tariff === "AMATEUR") && u.tariffExpiresAt ? (
                       <span className={daysLeft(u.tariffExpiresAt)! <= 5 ? "text-rose-500 font-semibold" : "text-gray-400"}>
                         {daysLeft(u.tariffExpiresAt)} kun qoldi
                       </span>

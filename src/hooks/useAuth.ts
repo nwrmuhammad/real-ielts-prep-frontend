@@ -8,16 +8,12 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) { setLoading(false); return; }
-
-    api.get("/auth/me")
+    api.get("/auth/me", { silent: true })
       .then(({ data }) => {
         localStorage.setItem("user", JSON.stringify(data));
         setUser(data);
       })
       .catch(() => {
-        localStorage.removeItem("token");
         localStorage.removeItem("user");
       })
       .finally(() => setLoading(false));
@@ -25,7 +21,6 @@ export function useAuth() {
 
   const login = useCallback(async (email: string, password: string) => {
     const { data } = await api.post("/auth/login", { email, password });
-    localStorage.setItem("token", data.token);
     localStorage.setItem("user", JSON.stringify(data.user));
     setUser(data.user);
     return data.user as User;
@@ -33,18 +28,18 @@ export function useAuth() {
 
   const register = useCallback(async (name: string, email: string, password: string) => {
     const { data } = await api.post("/auth/register", { name, email, password });
-    localStorage.setItem("token", data.token);
     localStorage.setItem("user", JSON.stringify(data.user));
     setUser(data.user);
     return data.user as User;
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setUser(null);
-    const isAdmin = window.location.pathname.startsWith("/admin");
-    window.location.href = isAdmin ? "/admin/login" : "/login";
+    api.post("/auth/logout").finally(() => {
+      localStorage.removeItem("user");
+      setUser(null);
+      const isAdmin = window.location.pathname.startsWith("/admin");
+      window.location.href = isAdmin ? "/admin/login" : "/login";
+    });
   }, []);
 
   return { user, loading, login, register, logout };

@@ -124,8 +124,12 @@ export default function AdminTestDetailPage() {
   async function addQuestion(passageId: string, e: React.FormEvent) {
     e.preventDefault();
     const qf = questionForms[passageId] ?? emptyQuestion;
+    if (qf.type === "FILL_IN_BLANK" && !qf.instruction) {
+      toast.error("Instruction turini tanlang!");
+      return;
+    }
     try {
-      const payload = { ...qf, options: qf.type === "MULTIPLE_CHOICE" ? qf.options : undefined };
+      const payload = { ...qf, options: (qf.type === "MULTIPLE_CHOICE" || qf.type === "MATCHING_INFO") ? qf.options.filter(Boolean) : undefined };
       const { data } = await api.post(`/tests/passages/${passageId}/questions`, payload);
       setTest((t) => t ? {
         ...t,
@@ -331,7 +335,11 @@ export default function AdminTestDetailPage() {
                         <div className="sm:col-span-2">
                           <label className="mb-1 block text-xs font-medium text-gray-600">Question Type</label>
                           <select value={qf.type}
-                            onChange={(e) => setQuestionForms((p) => ({ ...p, [passage.id]: { ...qf, type: e.target.value as QuestionType } }))}
+                            onChange={(e) => {
+                            const t = e.target.value as QuestionType;
+                            const opts = t === "MULTIPLE_CHOICE" ? ["A) ", "B) ", "C) ", "D) "] : t === "MATCHING_INFO" ? ["A - "] : [];
+                            setQuestionForms((p) => ({ ...p, [passage.id]: { ...qf, type: t, instruction: "", options: opts } }));
+                          }}
                             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-red-400 transition">
                             {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                           </select>
@@ -344,10 +352,31 @@ export default function AdminTestDetailPage() {
                           placeholder="Enter the question..."
                           className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-red-400 transition" />
                       </div>
-                      {(qf.type === "FILL_IN_BLANK" || qf.type === "SHORT_ANSWER" || qf.type === "MATCHING_HEADINGS" || qf.type === "MATCHING_INFO") && (
+                      {qf.type === "FILL_IN_BLANK" && (
                         <div>
                           <label className="mb-1 block text-xs font-medium text-gray-600">
-                            Instruction <span className="text-gray-400 font-normal">(ixtiyoriy — e.g. "NO MORE THAN THREE WORDS")</span>
+                            Instruction <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            required
+                            value={qf.instruction ?? ""}
+                            onChange={(e) => setQuestionForms((p) => ({ ...p, [passage.id]: { ...qf, instruction: e.target.value } }))}
+                            className="w-full rounded-lg border border-amber-200 bg-amber-50/40 px-3 py-2 text-sm outline-none focus:border-amber-400 transition"
+                          >
+                            <option value="" disabled>— tanlang —</option>
+                            <option value="ONE WORD ONLY">ONE WORD ONLY</option>
+                            <option value="ONE WORD AND/OR A NUMBER">ONE WORD AND/OR A NUMBER</option>
+                            <option value="NO MORE THAN TWO WORDS">NO MORE THAN TWO WORDS</option>
+                            <option value="NO MORE THAN TWO WORDS AND/OR A NUMBER">NO MORE THAN TWO WORDS AND/OR A NUMBER</option>
+                            <option value="NO MORE THAN THREE WORDS">NO MORE THAN THREE WORDS</option>
+                            <option value="NO MORE THAN THREE WORDS AND/OR A NUMBER">NO MORE THAN THREE WORDS AND/OR A NUMBER</option>
+                          </select>
+                        </div>
+                      )}
+                      {(qf.type === "SHORT_ANSWER" || qf.type === "MATCHING_HEADINGS" || qf.type === "MATCHING_INFO") && (
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-600">
+                            Instruction <span className="text-gray-400 font-normal">(ixtiyoriy)</span>
                           </label>
                           <input value={qf.instruction ?? ""}
                             onChange={(e) => setQuestionForms((p) => ({ ...p, [passage.id]: { ...qf, instruction: e.target.value } }))}
@@ -368,6 +397,40 @@ export default function AdminTestDetailPage() {
                                 }}
                                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-red-400 transition" />
                             ))}
+                          </div>
+                        </div>
+                      )}
+                      {qf.type === "MATCHING_INFO" && (
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-600">
+                            Options <span className="text-gray-400 font-normal">(e.g. "A - John Smith" yoki "A")</span>
+                          </label>
+                          <div className="space-y-1.5">
+                            {(qf.options ?? []).map((opt, i) => (
+                              <div key={i} className="flex gap-1.5">
+                                <input value={opt}
+                                  onChange={(e) => {
+                                    const opts = [...(qf.options ?? [])];
+                                    opts[i] = e.target.value;
+                                    setQuestionForms((p) => ({ ...p, [passage.id]: { ...qf, options: opts } }));
+                                  }}
+                                  placeholder={`A - Name yoki A`}
+                                  className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-red-400 transition" />
+                                <button type="button"
+                                  onClick={() => {
+                                    const opts = (qf.options ?? []).filter((_, j) => j !== i);
+                                    setQuestionForms((p) => ({ ...p, [passage.id]: { ...qf, options: opts } }));
+                                  }}
+                                  className="rounded-lg px-2 text-gray-300 hover:text-red-500 transition">✕</button>
+                              </div>
+                            ))}
+                            <button type="button"
+                              onClick={() => {
+                                const letters = "ABCDEFGHIJ";
+                                const next = letters[(qf.options ?? []).length] ?? "?";
+                                setQuestionForms((p) => ({ ...p, [passage.id]: { ...qf, options: [...(qf.options ?? []), `${next} - `] } }));
+                              }}
+                              className="mt-1 text-xs font-medium text-gray-400 hover:text-black transition">+ Option qo'shish</button>
                           </div>
                         </div>
                       )}

@@ -145,8 +145,10 @@ function QuestionBlock({ question, answer, onChange, flagged, onFlag, qHighlight
   const rawOpts = question.options;
   const opts = Array.isArray(rawOpts) ? (rawOpts as string[]) : undefined;
   const isFIB = question.type === "FILL_IN_BLANK" || question.type === "SHORT_ANSWER";
+  const hasWordBank = isFIB && !!opts && opts.length > 0;
   const hasBlank = isFIB && BLANK_RE.test(question.questionText);
   const parts = hasBlank ? question.questionText.split(BLANK_RE) : null;
+  const tfOptions = question.instruction === "YES_NO_NG" ? ["YES", "NO", "NOT GIVEN"] : ["TRUE", "FALSE", "NOT GIVEN"];
 
   return (
     <div className="mb-8">
@@ -164,29 +166,55 @@ function QuestionBlock({ question, answer, onChange, flagged, onFlag, qHighlight
               <span key={i}>
                 {renderWithHighlights(part, qHighlights, onRemoveQHighlight)}
                 {i < parts.length - 1 && (
-                  <input
-                    type="text"
-                    value={answer}
-                    onChange={(e) => onChange(e.target.value)}
-                    placeholder={String(question.order)}
-                    className="mx-1 rounded border border-gray-300 bg-white px-2 py-0.5 text-center text-sm font-medium outline-none focus:border-black transition placeholder:text-gray-300 align-baseline"
-                    style={{ width: `${Math.max(120, answer.length * 9 + 16)}px` }}
-                  />
+                  hasWordBank ? (
+                    <span className={`mx-1 inline-flex h-6 min-w-[2.25rem] items-center justify-center rounded border px-2 text-center text-sm font-bold align-baseline ${
+                      answer ? "border-black bg-black text-white" : "border-gray-300 bg-white text-gray-300"
+                    }`}>
+                      {answer || String(question.order)}
+                    </span>
+                  ) : (
+                    <input
+                      type="text"
+                      value={answer}
+                      onChange={(e) => onChange(e.target.value)}
+                      placeholder={String(question.order)}
+                      className="mx-1 rounded border border-gray-300 bg-white px-2 py-0.5 text-center text-sm font-medium outline-none focus:border-black transition placeholder:text-gray-300 align-baseline"
+                      style={{ width: `${Math.max(120, answer.length * 9 + 16)}px` }}
+                    />
+                  )
                 )}
               </span>
             ))}
           </p>
         ) : (
-          <p data-qid={question.id} className="text-sm text-black leading-relaxed select-text">
-            {renderWithHighlights(question.questionText, qHighlights, onRemoveQHighlight)}
-          </p>
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <p data-qid={question.id} className="text-sm text-black leading-relaxed select-text flex-1">
+              {renderWithHighlights(question.questionText, qHighlights, onRemoveQHighlight)}
+            </p>
+            {question.type === "MATCHING_INFO" && opts && (
+              <select
+                value={answer || ""}
+                onChange={(e) => onChange(e.target.value)}
+                className="shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-black focus:border-black focus:outline-none"
+              >
+                <option value="">–</option>
+                {opts.map((opt) => {
+                  const m = opt.match(/^([A-Z])\s*[-–]?\s*/);
+                  const letter = m ? m[1] : opt.charAt(0);
+                  return (
+                    <option key={opt} value={letter}>{letter}</option>
+                  );
+                })}
+              </select>
+            )}
+          </div>
         )}
       </div>
 
-      {/* TRUE / FALSE / NOT GIVEN */}
+      {/* TRUE / FALSE / NOT GIVEN (or YES / NO / NOT GIVEN) */}
       {question.type === "TRUE_FALSE_NG" && (
         <div className="ml-6 mt-2 flex flex-wrap gap-2">
-          {["TRUE", "FALSE", "NOT GIVEN"].map((opt) => (
+          {tfOptions.map((opt) => (
             <button key={opt} type="button"
               onClick={() => onChange(answer === opt ? "" : opt)}
               className={`rounded border px-4 py-1.5 text-xs font-bold tracking-wide transition-all ${
@@ -223,11 +251,31 @@ function QuestionBlock({ question, answer, onChange, flagged, onFlag, qHighlight
       )}
 
       {/* FILL IN BLANK / SHORT ANSWER — fallback if no inline blank detected */}
-      {isFIB && !hasBlank && (
+      {isFIB && !hasBlank && !hasWordBank && (
         <div className="ml-6 mt-2">
           <input type="text" value={answer} onChange={(e) => onChange(e.target.value)}
             placeholder="Write your answer"
             className="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-800 transition w-full max-w-sm" />
+        </div>
+      )}
+
+      {/* FILL IN BLANK with a shared word bank — pick the matching letter */}
+      {hasWordBank && opts && (
+        <div className="ml-6 mt-2 flex flex-wrap gap-1.5">
+          {opts.map((opt) => {
+            const letter = opt[0];
+            return (
+              <button key={opt} type="button"
+                onClick={() => onChange(answer === letter ? "" : letter)}
+                className={`min-w-[2.5rem] rounded border px-2.5 py-1 text-sm font-bold transition-all ${
+                  answer === letter
+                    ? "border-black bg-black text-white"
+                    : "border-gray-300 text-black hover:border-gray-500 hover:bg-gray-50"
+                }`}>
+                {letter}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -251,25 +299,6 @@ function QuestionBlock({ question, answer, onChange, flagged, onFlag, qHighlight
         </div>
       )}
 
-      {/* MATCHING INFO */}
-      {question.type === "MATCHING_INFO" && opts && (
-        <div className="ml-6 flex flex-wrap gap-2">
-          {opts.map((opt) => {
-            const m = opt.match(/^([A-Z])\s*[-–]?\s*/);
-            const letter = m ? m[1] : opt.charAt(0);
-            return (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => onChange(answer === letter ? "" : letter)}
-                className={`flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-bold transition-all ${answer === letter ? "border-black bg-black text-white" : "border-gray-200 text-black hover:border-gray-400 hover:bg-gray-50"}`}
-              >
-                {letter}
-              </button>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
@@ -295,6 +324,7 @@ export default function TestPage() {
   const [flagged, setFlagged]     = useState<Set<string>>(new Set());
   const [fontIdx, setFontIdx]     = useState(DEFAULT_FONT_IDX);
   const [wordPopup, setWordPopup] = useState<WordPopup | null>(null);
+  const [timerInitialSeconds, setTimerInitialSeconds] = useState(0);
   const passageRef   = useRef<HTMLDivElement>(null);
   const questionsRef = useRef<HTMLDivElement>(null);
   const startTimeRef = useRef<number>(0);
@@ -305,7 +335,47 @@ export default function TestPage() {
   const [mobileTab, setMobileTab] = useState<"passage" | "questions">("passage");
   const fontSize = FONT_SIZES[fontIdx];
 
+  const draftKey = `ielts_draft_${id}`;
+
   useEffect(() => { api.get(`/tests/${id}`).then((r) => setTest(r.data)); }, [id]);
+
+  // Restore draft from localStorage after test loads
+  useEffect(() => {
+    if (!test || !id) return;
+    try {
+      const raw = localStorage.getItem(`ielts_draft_${id}`);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (!draft.resultId) return;
+      const elapsed = Math.round((Date.now() - draft.startedAt) / 1000);
+      const remaining = Math.max(10, test.timeLimit * 60 - elapsed);
+      setResultId(draft.resultId);
+      startTimeRef.current = draft.startedAt;
+      setAnswers(draft.answers ?? {});
+      setHighlights(draft.highlights ?? {});
+      setQuestionHighlights(draft.questionHighlights ?? {});
+      setFlagged(new Set(draft.flagged ?? []));
+      setActivePassage(draft.activePassage ?? 0);
+      setTimerInitialSeconds(remaining);
+      setStarted(true);
+    } catch {}
+  }, [test, id]);
+
+  // Persist draft to localStorage whenever key state changes
+  useEffect(() => {
+    if (!started || !resultId || !id) return;
+    try {
+      localStorage.setItem(`ielts_draft_${id}`, JSON.stringify({
+        resultId,
+        startedAt: startTimeRef.current,
+        answers,
+        highlights,
+        questionHighlights,
+        flagged: [...flagged],
+        activePassage,
+      }));
+    } catch {}
+  }, [answers, highlights, questionHighlights, flagged, activePassage, started, resultId, id]);
 
   // drag-to-resize
   useEffect(() => {
@@ -493,7 +563,12 @@ export default function TestPage() {
 
   async function handleStart() {
     const { data } = await api.post("/results/start", { testId: id });
-    setResultId(data.id); startTimeRef.current = Date.now(); setStarted(true);
+    const now = Date.now();
+    const secs = (test?.timeLimit ?? 20) * 60;
+    setResultId(data.id);
+    startTimeRef.current = now;
+    setTimerInitialSeconds(secs);
+    setStarted(true);
     try { await document.documentElement.requestFullscreen(); } catch {}
   }
 
@@ -516,6 +591,7 @@ export default function TestPage() {
     const timeSpent = Math.round((Date.now() - startTimeRef.current) / 1000);
     try {
       await api.post(`/results/${resultId}/submit`, { answers: Object.entries(answers).map(([questionId, userAnswer]) => ({ questionId, userAnswer })), timeSpent });
+      localStorage.removeItem(draftKey);
       toast.success("Test submitted!"); router.push(`/results/${resultId}`);
     } catch { toast.error("Something went wrong"); setSubmitting(false); }
   }, [resultId, submitting, answers, router]);
@@ -665,7 +741,7 @@ export default function TestPage() {
           <span className="text-xs sm:text-sm font-semibold text-black truncate max-w-[100px] sm:max-w-xs">{test.title}</span>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-3">
-          <Timer seconds={test.timeLimit * 60} onExpire={handleSubmit} />
+          <Timer seconds={timerInitialSeconds || test.timeLimit * 60} onExpire={handleSubmit} />
           {/* Font size — hidden on mobile */}
           <div className="hidden sm:flex items-center gap-0.5 rounded border border-gray-200 px-1 py-0.5">
             <button onClick={() => setFontIdx((i) => Math.max(0, i - 1))} disabled={fontIdx === 0}
@@ -714,7 +790,7 @@ export default function TestPage() {
         {/* Left — passage */}
         <div className={`overflow-y-auto ${mobileTab === "passage" ? "flex" : "hidden"} sm:flex flex-col`}
           style={{ width: typeof window !== "undefined" && window.innerWidth >= 640 ? `${leftPct}%` : "100%", fontSize: `${fontSize}px` }}>
-          <div className="mx-auto w-full max-w-2xl px-4 sm:px-6 py-6 sm:py-10 leading-7 sm:leading-8 font-medium text-black">
+          <div className="mx-auto w-[95%] py-6 sm:py-10 leading-7 sm:leading-8 font-medium text-black">
             <p className="mb-1 text-xs sm:text-sm font-bold uppercase tracking-wide text-black">PASSAGE {passage.order}</p>
             <p className="mb-4 sm:mb-6 text-xs text-gray-500 leading-relaxed">
               Questions {firstQ?.order}–{lastQ?.order} are based on Reading Passage {passage.order} below.
@@ -751,6 +827,8 @@ export default function TestPage() {
               // MATCHING_INFO has two IELTS sub-types: bare letters ("A") = match-to-paragraph,
               // "letter - name" pairs ("A - John") = match-to-person/category
               const matchingInfoHasNames = opts?.some((o) => o.replace(/^[A-Z]\s*[-–]?\s*/, "").trim().length > 0) ?? false;
+              const groupHasWordBank = (group.type === "FILL_IN_BLANK" || group.type === "SHORT_ANSWER") && !!opts && opts.length > 0;
+              const isYesNo = group.type === "TRUE_FALSE_NG" && group.instruction === "YES_NO_NG";
 
               return (
                 <div key={gi} className={gi > 0 ? "mt-12" : ""}>
@@ -763,25 +841,64 @@ export default function TestPage() {
                   {/* Type-specific instruction */}
                   {group.type === "TRUE_FALSE_NG" && (
                     <div className="mb-6 text-sm text-black leading-relaxed space-y-1.5">
-                      <p><em>Do the following statements agree with the information given in Reading Passage {passage.order}?</em></p>
+                      {isYesNo ? (
+                        <p><em>Do the following statements agree with the claims of the writer in Reading Passage {passage.order}?</em></p>
+                      ) : (
+                        <p><em>Do the following statements agree with the information given in Reading Passage {passage.order}?</em></p>
+                      )}
                       <p><em>In boxes <strong>{range}</strong> on your answer sheet, write</em></p>
                       <div className="mt-2 space-y-1 pl-2 border-l-2 border-gray-300">
-                        <div className="flex gap-3"><span className="font-bold w-24 shrink-0 text-black">TRUE</span><span className="text-gray-600">if the statement agrees with the information</span></div>
-                        <div className="flex gap-3"><span className="font-bold w-24 shrink-0 text-black">FALSE</span><span className="text-gray-600">if the statement contradicts the information</span></div>
-                        <div className="flex gap-3"><span className="font-bold w-24 shrink-0 text-black">NOT GIVEN</span><span className="text-gray-600">if there is no information on this</span></div>
+                        {isYesNo ? (
+                          <>
+                            <div className="flex gap-3"><span className="font-bold w-24 shrink-0 text-black">YES</span><span className="text-gray-600">if the statement agrees with the claims of the writer</span></div>
+                            <div className="flex gap-3"><span className="font-bold w-24 shrink-0 text-black">NO</span><span className="text-gray-600">if the statement contradicts the claims of the writer</span></div>
+                            <div className="flex gap-3"><span className="font-bold w-24 shrink-0 text-black">NOT GIVEN</span><span className="text-gray-600">if there is no information on this</span></div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex gap-3"><span className="font-bold w-24 shrink-0 text-black">TRUE</span><span className="text-gray-600">if the statement agrees with the information</span></div>
+                            <div className="flex gap-3"><span className="font-bold w-24 shrink-0 text-black">FALSE</span><span className="text-gray-600">if the statement contradicts the information</span></div>
+                            <div className="flex gap-3"><span className="font-bold w-24 shrink-0 text-black">NOT GIVEN</span><span className="text-gray-600">if there is no information on this</span></div>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}
 
                   {(group.type === "FILL_IN_BLANK" || group.type === "SHORT_ANSWER") && (
-                    <div className="mb-6 text-sm text-black leading-relaxed space-y-1">
-                      <p><em>Complete the notes below.</em></p>
-                      {group.instruction
-                        ? <p><em>Choose <strong>NO MORE THAN {group.instruction}</strong> from the passage for each answer.</em></p>
-                        : <p><em>Choose <strong>NO MORE THAN THREE WORDS AND/OR A NUMBER</strong> from the passage for each answer.</em></p>
-                      }
-                      <p><em>Write your answers in boxes <strong>{range}</strong> on your answer sheet.</em></p>
-                    </div>
+                    groupHasWordBank ? (
+                      <div className="mb-6 text-sm text-black leading-relaxed space-y-1">
+                        <p><em>Complete the summary below.</em></p>
+                        <p><em>Choose the correct answer, <strong>{opts![0][0]}–{opts![opts!.length - 1][0]}</strong>, from the box below.</em></p>
+                        <p><em>Write the correct letter in boxes <strong>{range}</strong> on your answer sheet.</em></p>
+                        <div className="mt-4 overflow-hidden rounded border border-gray-300">
+                          <div className="border-b border-gray-300 bg-gray-100 py-2 text-center text-xs font-bold uppercase tracking-widest text-black">
+                            Word / Option Bank
+                          </div>
+                          <div className="divide-y divide-gray-100 bg-white">
+                            {opts!.map((opt) => {
+                              const letter = opt[0];
+                              const text = opt.slice(1).replace(/^[\s.:)]+/, "");
+                              return (
+                                <div key={opt} className="flex gap-4 px-4 py-2.5 text-sm leading-snug">
+                                  <span className="w-6 shrink-0 font-bold text-black">{letter}</span>
+                                  <span className="text-black">{text}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mb-6 text-sm text-black leading-relaxed space-y-1">
+                        <p><em>Complete the notes below.</em></p>
+                        {group.instruction
+                          ? <p><em>Choose <strong>NO MORE THAN {group.instruction}</strong> from the passage for each answer.</em></p>
+                          : <p><em>Choose <strong>NO MORE THAN THREE WORDS AND/OR A NUMBER</strong> from the passage for each answer.</em></p>
+                        }
+                        <p><em>Write your answers in boxes <strong>{range}</strong> on your answer sheet.</em></p>
+                      </div>
+                    )
                   )}
 
                   {group.type === "MULTIPLE_CHOICE" && (

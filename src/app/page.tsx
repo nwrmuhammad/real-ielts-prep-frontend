@@ -491,6 +491,246 @@ export default function HomePage() {
         </Reveal>
       </section>
 
+      {/* ── PRICING ── */}
+      <section className="bg-gray-50 py-24">
+        <div className="mx-auto max-w-screen-xl px-6 sm:px-10">
+          <Reveal>
+            <div className="mb-14 text-center">
+              <span className="inline-block rounded-full bg-red-50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-red-500 mb-4">Pricing</span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-black">Simple, honest pricing</h2>
+              <p className="mt-3 text-gray-400 text-base max-w-md mx-auto">Start free, upgrade when you're ready</p>
+            </div>
+          </Reveal>
+          <div className="grid gap-5 sm:grid-cols-3 max-w-4xl mx-auto items-end">
+
+            {/* Free */}
+            <Reveal>
+              <div className="flex flex-col rounded-2xl border border-gray-200 bg-white px-7 py-8 h-full shadow-sm">
+                <div className="mb-6">
+                  {/* Cartoon Book */}
+                  <div className="mb-5 flex justify-center">
+                    <svg viewBox="0 0 96 80" className="h-20 w-24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <ellipse cx="48" cy="75" rx="26" ry="4" fill="#e5e7eb"/>
+                      {/* Left page */}
+                      <path d="M10 14Q10 8 16 8L44 8L44 68L16 68Q10 68 10 62Z" fill="#DBEAFE" stroke="#1f2937" strokeWidth="2.5" strokeLinejoin="round"/>
+                      {/* Right page */}
+                      <path d="M52 8L80 8Q86 8 86 14L86 62Q86 68 80 68L52 68Z" fill="#FEF9C3" stroke="#1f2937" strokeWidth="2.5" strokeLinejoin="round"/>
+                      {/* Spine */}
+                      <rect x="43" y="8" width="10" height="60" rx="1" fill="#92400E" stroke="#1f2937" strokeWidth="2"/>
+                      <rect x="45" y="8" width="6" height="60" fill="#B45309"/>
+                      {/* Left lines */}
+                      <rect x="17" y="22" width="20" height="3" rx="1.5" fill="#93C5FD"/>
+                      <rect x="17" y="30" width="20" height="3" rx="1.5" fill="#93C5FD"/>
+                      <rect x="17" y="38" width="14" height="3" rx="1.5" fill="#93C5FD"/>
+                      <rect x="17" y="46" width="20" height="3" rx="1.5" fill="#93C5FD"/>
+                      <rect x="17" y="54" width="12" height="3" rx="1.5" fill="#93C5FD"/>
+                      {/* Right lines */}
+                      <rect x="59" y="22" width="20" height="3" rx="1.5" fill="#FCD34D"/>
+                      <rect x="59" y="30" width="20" height="3" rx="1.5" fill="#FCD34D"/>
+                      <rect x="59" y="38" width="14" height="3" rx="1.5" fill="#FCD34D"/>
+                      <rect x="59" y="46" width="20" height="3" rx="1.5" fill="#FCD34D"/>
+                      <rect x="59" y="54" width="16" height="3" rx="1.5" fill="#FCD34D"/>
+                      {/* Bookmark */}
+                      <path d="M28 8L28 22L24 18L20 22L20 8Z" fill="#EF4444" stroke="#1f2937" strokeWidth="2" strokeLinejoin="round"/>
+                      {/* Shine */}
+                      <path d="M14 13Q18 10 22 13" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
+                    </svg>
+                  </div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Free</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-extrabold text-black">0</span>
+                    <span className="text-sm font-medium text-gray-400">so'm</span>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-400">Always free</p>
+                </div>
+                <ul className="space-y-3 flex-1 mb-7">
+                  {["10 practice reading tests","All question types","Instant band scoring"].map(f => (
+                    <li key={f} className="flex items-center gap-2.5 text-sm text-gray-500">
+                      <svg viewBox="0 0 20 20" className="h-4 w-4 shrink-0 text-gray-400" fill="currentColor">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-5.121-5.121a1 1 0 011.414-1.414L8.414 12.172l6.879-6.879a1 1 0 011.414 0z" clipRule="evenodd"/>
+                      </svg>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link href="/register"
+                  className="block w-full rounded-full border-2 border-gray-200 py-2.5 text-center text-sm font-bold text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition">
+                  Get started
+                </Link>
+              </div>
+            </Reveal>
+
+            {/* Lite */}
+            <Reveal>
+              <div className="flex flex-col rounded-2xl border-2 border-red-200 bg-rose-50 px-7 py-8 h-full shadow-md shadow-red-100">
+                <div className="mb-6">
+                  {/* Cartoon Rocket */}
+                  <div className="mb-5 flex justify-center">
+                    <svg viewBox="0 0 96 96" className="h-24 w-24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      {/* Stars */}
+                      <path d="M14 22L15 25L18 26L15 27L14 30L13 27L10 26L13 25Z" fill="#FCD34D"/>
+                      <path d="M78 16L79 19L82 20L79 21L78 24L77 21L74 20L77 19Z" fill="#FCD34D"/>
+                      <circle cx="82" cy="52" r="2.5" fill="#FCD34D"/>
+                      <circle cx="12" cy="58" r="2" fill="#FCD34D"/>
+                      <circle cx="76" cy="72" r="1.5" fill="#93C5FD"/>
+                      {/* Flame outer */}
+                      <path d="M36 72Q33 84 48 88Q63 84 60 72Z" fill="#FCD34D" stroke="#1f2937" strokeWidth="2.5" strokeLinejoin="round"/>
+                      {/* Flame inner */}
+                      <path d="M39 72Q37 81 48 84Q59 81 57 72Z" fill="#F97316"/>
+                      <path d="M42 72Q41 78 48 80Q55 78 54 72Z" fill="#EF4444"/>
+                      {/* Left fin */}
+                      <path d="M30 60L18 74L32 68Z" fill="#3B82F6" stroke="#1f2937" strokeWidth="2.5" strokeLinejoin="round"/>
+                      {/* Right fin */}
+                      <path d="M66 60L78 74L64 68Z" fill="#3B82F6" stroke="#1f2937" strokeWidth="2.5" strokeLinejoin="round"/>
+                      {/* Rocket body */}
+                      <path d="M48 8C48 8 28 24 26 58L48 68L70 58C68 24 48 8 48 8Z" fill="#EFF6FF" stroke="#1f2937" strokeWidth="2.5" strokeLinejoin="round"/>
+                      {/* Nose */}
+                      <path d="M48 8C44 20 44 28 48 30C52 28 52 20 48 8Z" fill="#3B82F6" stroke="#1f2937" strokeWidth="2.5" strokeLinejoin="round"/>
+                      {/* Body stripe */}
+                      <path d="M28 44L68 44" stroke="#BFDBFE" strokeWidth="2" strokeLinecap="round"/>
+                      {/* Window */}
+                      <circle cx="48" cy="44" r="11" fill="#BFDBFE" stroke="#1f2937" strokeWidth="2.5"/>
+                      <circle cx="48" cy="44" r="7" fill="#3B82F6" stroke="#1f2937" strokeWidth="2"/>
+                      <circle cx="45" cy="41" r="2.5" fill="white" opacity="0.7"/>
+                    </svg>
+                  </div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-red-400 mb-1">Lite</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-extrabold text-black">50,000</span>
+                    <span className="text-sm font-medium text-gray-400">so'm</span>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-400">30 days</p>
+                </div>
+                <ul className="space-y-3 flex-1 mb-7">
+                  {["Everything in Free","All IELTS Volume tests","Unlimited attempts"].map(f => (
+                    <li key={f} className="flex items-center gap-2.5 text-sm text-gray-700">
+                      <svg viewBox="0 0 20 20" className="h-4 w-4 shrink-0 text-red-400" fill="currentColor">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-5.121-5.121a1 1 0 011.414-1.414L8.414 12.172l6.879-6.879a1 1 0 011.414 0z" clipRule="evenodd"/>
+                      </svg>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <a href="https://t.me/nvrmuhammad" target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full rounded-full bg-red-500 py-2.5 text-center text-sm font-bold text-white hover:bg-red-600 transition shadow-md shadow-red-200">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                  </svg>
+                  Get via Telegram
+                </a>
+              </div>
+            </Reveal>
+
+            {/* Pro */}
+            <Reveal>
+              <div className="flex flex-col rounded-2xl border-2 border-red-500 bg-gradient-to-b from-red-500 to-red-600 px-7 py-8 h-full shadow-xl shadow-red-300/50 relative">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1 text-xs font-bold text-red-600 shadow-md">
+                    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="currentColor">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
+                    Most popular
+                  </span>
+                </div>
+                <div className="mb-6">
+                  {/* Cartoon Trophy */}
+                  <div className="mb-5 flex justify-center">
+                    <svg viewBox="0 0 96 96" className="h-24 w-24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      {/* Sparkles */}
+                      <path d="M16 24L17 27L20 28L17 29L16 32L15 29L12 28L15 27Z" fill="#FCD34D"/>
+                      <path d="M80 20L81 23L84 24L81 25L80 28L79 25L76 24L79 23Z" fill="#FCD34D"/>
+                      <circle cx="84" cy="46" r="3" fill="#FCD34D"/>
+                      <circle cx="10" cy="50" r="2.5" fill="#FCD34D"/>
+                      <path d="M78 62L79 64L81 65L79 66L78 68L77 66L75 65L77 64Z" fill="#E9D5FF"/>
+                      {/* Base plate */}
+                      <rect x="30" y="76" width="36" height="8" rx="4" fill="#92400E" stroke="#1f2937" strokeWidth="2.5"/>
+                      {/* Stem */}
+                      <rect x="30" y="68" width="36" height="10" rx="3" fill="#B45309" stroke="#1f2937" strokeWidth="2"/>
+                      {/* Stem neck */}
+                      <rect x="40" y="62" width="16" height="8" fill="#D97706" stroke="#1f2937" strokeWidth="2"/>
+                      {/* Left handle */}
+                      <path d="M30 32Q16 32 16 44Q16 56 30 54" stroke="#B45309" strokeWidth="6" strokeLinecap="round" fill="none"/>
+                      <path d="M30 32Q16 32 16 44Q16 56 30 54" stroke="#FCD34D" strokeWidth="3" strokeLinecap="round" fill="none"/>
+                      {/* Right handle */}
+                      <path d="M66 32Q80 32 80 44Q80 56 66 54" stroke="#B45309" strokeWidth="6" strokeLinecap="round" fill="none"/>
+                      <path d="M66 32Q80 32 80 44Q80 56 66 54" stroke="#FCD34D" strokeWidth="3" strokeLinecap="round" fill="none"/>
+                      {/* Cup body */}
+                      <path d="M22 14L30 64L66 64L74 14Z" fill="#FCD34D" stroke="#1f2937" strokeWidth="2.5" strokeLinejoin="round"/>
+                      {/* Cup inner shadow */}
+                      <path d="M26 18L32 60L64 60L70 18Z" fill="#FBBF24"/>
+                      <path d="M30 22L34 56L62 56L66 22Z" fill="#FCD34D"/>
+                      {/* Top rim */}
+                      <rect x="22" y="12" width="52" height="6" rx="3" fill="#F59E0B" stroke="#1f2937" strokeWidth="2.5"/>
+                      {/* Star on cup */}
+                      <path d="M48 28L50 34L56 34L51 38L53 44L48 40L43 44L45 38L40 34L46 34Z" fill="#FEF3C7" stroke="#92400E" strokeWidth="1.5" strokeLinejoin="round"/>
+                      {/* Shine on cup */}
+                      <path d="M28 20Q32 18 36 20" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.6"/>
+                    </svg>
+                  </div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-red-200 mb-1">Pro</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-extrabold text-white">150,000</span>
+                    <span className="text-sm font-medium text-red-200">so'm</span>
+                  </div>
+                  <p className="mt-1 text-xs text-red-200">30 days</p>
+                </div>
+                <ul className="space-y-3 flex-1 mb-7">
+                  {[
+                    "Everything in Lite",
+                    "Predicted tests (pre-exam)",
+                    "Most frequently tested topics",
+                    "Maximum score guarantee",
+                  ].map(f => (
+                    <li key={f} className="flex items-center gap-2.5 text-sm text-red-50">
+                      <svg viewBox="0 0 20 20" className="h-4 w-4 shrink-0 text-red-200" fill="currentColor">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-5.121-5.121a1 1 0 011.414-1.414L8.414 12.172l6.879-6.879a1 1 0 011.414 0z" clipRule="evenodd"/>
+                      </svg>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <a href="https://t.me/nvrmuhammad" target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full rounded-full bg-white py-2.5 text-center text-sm font-bold text-red-600 hover:bg-red-50 transition shadow-md">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                  </svg>
+                  Get via Telegram
+                </a>
+              </div>
+            </Reveal>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ── CONTACT ADMIN ── */}
+      <section className="bg-white py-20">
+        <div className="mx-auto max-w-screen-xl px-8">
+          <Reveal>
+            <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 rounded-3xl border border-gray-100 bg-gray-50 px-6 py-10 text-center sm:px-10">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#2AABEE] shadow-sm">
+                <svg className="h-7 w-7 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-2xl font-black tracking-tight text-black sm:text-3xl">Got a question?</h2>
+                <p className="mt-2 max-w-md text-sm sm:text-base text-gray-500">
+                  For billing, plans, or anything about the platform, reach out to the admin directly on Telegram.
+                </p>
+              </div>
+              <a href="https://t.me/nvrmuhammad" target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 rounded-full bg-[#2AABEE] px-7 py-3 text-sm sm:text-base font-bold text-white shadow-md shadow-blue-200/60 hover:bg-[#229ED9] hover:-translate-y-0.5 transition-all">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                </svg>
+                Contact Admin
+              </a>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
       {/* ── FOOTER ── */}
       <footer className="border-t border-gray-100 bg-white py-8">
         <div className="mx-auto flex max-w-screen-xl items-center justify-between px-8">

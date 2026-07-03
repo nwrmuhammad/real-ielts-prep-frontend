@@ -6,32 +6,51 @@ import { Test } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/api";
 
-function PredictedModal({ onClose }: { onClose: () => void }) {
+function getInProgressTestIds(): Set<string> {
+  try {
+    const ids = new Set<string>();
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith("ielts_draft_")) {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const draft = JSON.parse(raw);
+          if (draft.resultId) ids.add(key.replace("ielts_draft_", ""));
+        }
+      }
+    }
+    return ids;
+  } catch { return new Set(); }
+}
+
+const TG_LINK = "https://t.me/nvrmuhammad";
+const TG_ICON = (
+  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+  </svg>
+);
+
+function UpgradeModal({ type, onClose }: { type: "volume" | "predicted"; onClose: () => void }) {
+  const isVolume = type === "volume";
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={onClose}>
       <div className="w-full max-w-sm rounded-2xl bg-white p-7 shadow-2xl text-center" onClick={(e) => e.stopPropagation()}>
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-purple-100">
-          <Lock className="h-7 w-7 text-purple-600" />
+        <div className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full ${isVolume ? "bg-blue-100" : "bg-purple-100"}`}>
+          <Lock className={`h-7 w-7 ${isVolume ? "text-blue-600" : "text-purple-600"}`} />
         </div>
         <h2 className="mb-2 text-lg font-bold text-black">Upgrade Required</h2>
         <p className="mb-5 text-sm text-gray-400">
-          Predicted tests are available on the <span className="font-semibold text-black">Erkatoy</span> plan.
+          {isVolume
+            ? <>Volume testlar <span className="font-semibold text-black">Lite</span> yoki <span className="font-semibold text-black">Pro</span> planda mavjud.</>
+            : <>Predicted testlar <span className="font-semibold text-black">Pro</span> planda mavjud.</>
+          }
         </p>
-        <a
-          href="https://t.me/nvrmuhammad"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mb-3 flex w-full items-center justify-center gap-2 rounded-full bg-[#2AABEE] py-2.5 text-sm font-bold text-white hover:bg-[#229ED9] transition"
-        >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-          </svg>
-          Contact on Telegram
+        <a href={TG_LINK} target="_blank" rel="noopener noreferrer"
+          className="mb-3 flex w-full items-center justify-center gap-2 rounded-full bg-[#2AABEE] py-2.5 text-sm font-bold text-white hover:bg-[#229ED9] transition">
+          {TG_ICON} Telegram orqali bog'lanish
         </a>
-        <button
-          onClick={onClose}
-          className="w-full rounded-full border border-gray-200 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition"
-        >
+        <button onClick={onClose}
+          className="w-full rounded-full border border-gray-200 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
           Close
         </button>
       </div>
@@ -60,14 +79,22 @@ export default function TestsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("practice");
   const [passageCat, setPassageCat] = useState<number | null>(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState<"volume" | "predicted" | null>(null);
+  const [inProgressIds, setInProgressIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     api.get("/tests").then((r) => setTests(r.data)).finally(() => setLoading(false));
+    setInProgressIds(getInProgressTestIds());
   }, []);
 
-  const isPredicted = (t: Test) => (t.status ?? "FREE") === "PREDICTED";
-  const canAccess   = (t: Test) => user?.role === "ADMIN" || user?.tariff === "ERKATOY" || !isPredicted(t);
+  const isPredicted  = (t: Test) => (t.status ?? "FREE") === "PREDICTED";
+  const isVolume     = (t: Test) => !isPredicted(t) && extractVolumeNumber(t.title) !== null;
+  const canAccess    = (t: Test) => {
+    if (user?.role === "ADMIN") return true;
+    if (isPredicted(t)) return user?.tariff === "ERKATOY";
+    if (isVolume(t))    return user?.tariff === "AMATEUR" || user?.tariff === "ERKATOY";
+    return true;
+  };
 
   const visible = tests
     .filter((t) => {
@@ -181,12 +208,18 @@ export default function TestsPage() {
               {visible.map((test) => {
                 const locked = !canAccess(test);
                 const predicted = isPredicted(test);
+                const inProgress = inProgressIds.has(test.id);
 
+                const lockedType = locked ? (isPredicted(test) ? "predicted" : "volume") : null;
                 const card = (
                   <div className={`flex h-full flex-col justify-between rounded-2xl border bg-white px-5 py-5 transition ${
                     locked
-                      ? "border-gray-100 cursor-pointer hover:border-purple-200 hover:bg-purple-50/30"
-                      : "border-gray-200 cursor-pointer hover:border-gray-300 hover:shadow-md"
+                      ? isPredicted(test)
+                        ? "border-gray-100 cursor-pointer hover:border-purple-200 hover:bg-purple-50/30"
+                        : "border-gray-100 cursor-pointer hover:border-blue-200 hover:bg-blue-50/30"
+                      : inProgress
+                        ? "border-green-200 cursor-pointer hover:border-green-300 hover:shadow-md"
+                        : "border-gray-200 cursor-pointer hover:border-gray-300 hover:shadow-md"
                   }`}>
                     <div className="min-w-0">
                       <p className="text-base font-semibold text-gray-900 line-clamp-2 leading-snug">
@@ -203,14 +236,23 @@ export default function TestsPage() {
                           <BookOpen className="h-3.5 w-3.5" /> {test._count?.passages ?? 0} passages
                         </span>
                       </div>
-                      <p className={`mt-1.5 text-xs font-medium ${predicted ? "text-purple-500" : "text-gray-400"}`}>
-                        {sublabel(test)}
-                      </p>
+                      {!predicted && (
+                        <p className="mt-1.5 text-xs font-medium text-gray-400">
+                          {sublabel(test)}
+                        </p>
+                      )}
                     </div>
                     <div className="mt-3 flex justify-end">
                       {locked ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-700">
-                          <Lock className="h-3 w-3" /> Premium
+                        <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                          isPredicted(test) ? "bg-purple-50 border-purple-200 text-purple-700" : "bg-blue-50 border-blue-200 text-blue-700"
+                        }`}>
+                          <Lock className="h-3 w-3" /> {isPredicted(test) ? "Pro" : "Lite+"}
+                        </span>
+                      ) : inProgress ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 border border-green-200 px-3 py-1.5 text-xs font-semibold text-green-600">
+                          <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                          In Progress
                         </span>
                       ) : (
                         <span className="inline-block rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600">
@@ -221,7 +263,7 @@ export default function TestsPage() {
                   </div>
                 );
 
-                if (locked) return <div key={test.id} className="h-full" onClick={() => setShowModal(true)}>{card}</div>;
+                if (locked) return <div key={test.id} className="h-full" onClick={() => setShowModal(lockedType)}>{card}</div>;
                 return <Link key={test.id} className="h-full" href={`/tests/${test.id}`}>{card}</Link>;
               })}
             </div>
@@ -229,7 +271,7 @@ export default function TestsPage() {
         </div>
       </div>
 
-      {showModal && <PredictedModal onClose={() => setShowModal(false)} />}
+      {showModal && <UpgradeModal type={showModal} onClose={() => setShowModal(null)} />}
     </div>
   );
 }

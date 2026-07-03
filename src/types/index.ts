@@ -1,4 +1,4 @@
-export type Tariff = "XAVASKOR" | "ERKATOY";
+export type Tariff = "XAVASKOR" | "AMATEUR" | "ERKATOY";
 
 export interface User {
   id: string;
