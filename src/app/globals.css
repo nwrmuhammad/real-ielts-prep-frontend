@@ -121,3 +121,12 @@ body {
 /* Paused until JS adds .running */
 .paused { animation-play-state: paused; }
 .running { animation-play-state: running; }
+
+/* Hide scrollbar on horizontal sliders */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

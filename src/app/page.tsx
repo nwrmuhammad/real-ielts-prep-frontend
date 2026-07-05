@@ -1,11 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  GraduationCap, ArrowRight, CheckCircle, BookOpen, Headphones, PenLine, Mic,
-  Highlighter, Timer, BarChart3, TrendingUp, Brain, Trophy, MousePointer,
-  FileText, Zap, Clock,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Icon3D } from "@/components/ui/Icon3D";
 
 const UNIVERSITIES = [
   { name: "Harvard University", short: "H",    location: "Cambridge, USA",     band: "7.0", color: "#A51C30", accent: "#FFD700", light: "#FEF2F2", logo: "https://upload.wikimedia.org/wikipedia/commons/0/0c/Harvard_University_shield.svg" },
@@ -18,7 +15,7 @@ const UNIVERSITIES = [
 
 const SKILLS = [
   {
-    icon: BookOpen,
+    icon: "book" as const,
     label: "Reading",
     tag: "Live",
     tagColor: "bg-green-100 text-green-700",
@@ -29,7 +26,7 @@ const SKILLS = [
     href: "/register",
   },
   {
-    icon: Headphones,
+    icon: "headset" as const,
     label: "Listening",
     tag: "Coming Soon",
     tagColor: "bg-blue-100 text-blue-700",
@@ -40,7 +37,7 @@ const SKILLS = [
     href: null,
   },
   {
-    icon: PenLine,
+    icon: "pencil" as const,
     label: "Writing",
     tag: "Coming Soon",
     tagColor: "bg-amber-100 text-amber-700",
@@ -51,7 +48,7 @@ const SKILLS = [
     href: null,
   },
   {
-    icon: Mic,
+    icon: "microphone" as const,
     label: "Speaking",
     tag: "Coming Soon",
     tagColor: "bg-purple-100 text-purple-700",
@@ -110,8 +107,8 @@ export default function HomePage() {
       <nav className="sticky top-0 z-50 border-b border-gray-100 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex h-14 sm:h-16 max-w-screen-xl items-center justify-between px-4 sm:px-8">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-red-500 shadow-sm shadow-red-200">
-              <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+            <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center">
+              <Icon3D name="graduation-cap" size={36} />
             </div>
             <span className="font-extrabold tracking-tight text-black text-[14px] sm:text-[15px] leading-tight">
               Real IELTS<br />
@@ -139,7 +136,7 @@ export default function HomePage() {
             {/* Left */}
             <div className="flex-1 text-center lg:text-left">
               <div className="animate-fade-up delay-0 mb-5 inline-flex items-center gap-2 rounded-full border border-gray-100 bg-gray-50 px-3 py-1.5 text-xs sm:text-sm font-semibold text-black">
-                <Zap className="h-3.5 w-3.5 text-red-500" />
+                <Icon3D name="lightning-bolt" size={18} />
                 All 4 IELTS skills · Free to start
               </div>
 
@@ -266,7 +263,7 @@ export default function HomePage() {
               <div className="animate-float absolute -bottom-5 -left-6 z-10 rounded-2xl border border-red-100 bg-white px-4 py-3.5 shadow-xl">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                    <Trophy className="h-5 w-5 text-green-600" />
+                    <Icon3D name="trophy" size={28} />
                   </div>
                   <div>
                     <p className="text-xs font-bold text-black">Band 7.5</p>
@@ -326,11 +323,11 @@ export default function HomePage() {
           </Reveal>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {SKILLS.map(({ icon: Icon, label, tag, tagColor, color, fg, border, desc, href }, i) => (
+            {SKILLS.map(({ icon, label, tag, tagColor, color, border, desc, href }, i) => (
               <Reveal key={label} delay={i * 80} dir="up">
                 <div className={`group flex h-full flex-col rounded-2xl border ${border} bg-white p-6 shadow-sm transition-all duration-300 ${href ? "hover:-translate-y-1 hover:shadow-lg" : "opacity-70"}`}>
                   <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl ${color}`}>
-                    <Icon className={`h-6 w-6 ${fg}`} />
+                    <Icon3D name={icon} size={30} />
                   </div>
                   <div className="flex items-center gap-2 mb-3">
                     <h3 className="text-lg font-bold text-black">{label}</h3>
@@ -343,7 +340,7 @@ export default function HomePage() {
                     </Link>
                   ) : (
                     <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-gray-300">
-                      <Clock className="h-4 w-4" /> In development
+                      <Icon3D name="time" size={16} /> In development
                     </span>
                   )}
                 </div>
@@ -355,7 +352,7 @@ export default function HomePage() {
 
       {/* ── UNIVERSITIES ── */}
       <section className="bg-gray-50 py-24">
-        <div className="mx-auto max-w-screen-xl px-8">
+        <div className="mx-auto max-w-screen-xl px-4 sm:px-8">
           <Reveal className="mb-14 text-center">
             <span className="mb-4 inline-block rounded-full bg-gray-50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-black">
               Top Universities
@@ -366,17 +363,17 @@ export default function HomePage() {
             </p>
           </Reveal>
 
-          <div className="grid grid-cols-3 gap-x-6 gap-y-14 sm:grid-cols-6">
+          <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-2 sm:mx-0 sm:justify-center sm:gap-8 sm:overflow-visible sm:px-0">
             {UNIVERSITIES.map((uni, i) => (
-              <Reveal key={uni.name} delay={i * 80} dir="up">
-                <div className="flex flex-col items-center gap-4 text-center">
-                  <div className="h-28 w-28 animate-float" style={{ animationDelay: `${i * 0.4}s`, animationDuration: `${3 + i * 0.3}s` }}>
+              <Reveal key={uni.name} delay={i * 80} dir="up" className="flex-shrink-0 snap-center">
+                <div className="flex w-20 sm:w-28 flex-col items-center gap-3 sm:gap-4 text-center">
+                  <div className="h-16 w-16 sm:h-24 sm:w-24 md:h-28 md:w-28 animate-float" style={{ animationDelay: `${i * 0.4}s`, animationDuration: `${3 + i * 0.3}s` }}>
                     <UniLogo logo={uni.logo} short={uni.short} color={uni.color} accent={uni.accent} logoBg={(uni as any).logoBg} />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-black leading-tight">{uni.name}</p>
-                    <p className="mt-0.5 text-xs text-gray-400">{uni.location}</p>
-                    <span className="mt-2 inline-block rounded-full px-3 py-1 text-xs font-bold text-white" style={{ background: uni.color }}>
+                    <p className="text-xs sm:text-sm font-bold text-black leading-tight">{uni.name}</p>
+                    <p className="mt-0.5 text-[10px] sm:text-xs text-gray-400">{uni.location}</p>
+                    <span className="mt-2 inline-block rounded-full px-2.5 sm:px-3 py-1 text-[10px] sm:text-xs font-bold text-white" style={{ background: uni.color }}>
                       Band {uni.band}
                     </span>
                   </div>
@@ -405,17 +402,17 @@ export default function HomePage() {
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[
-              { icon: FileText,   bg: "bg-gray-50",   fg: "text-black",      ring: "hover:ring-red-200",    title: "Authentic passages",    desc: "Three-passage Academic format with all real question types: MCQ, True/False/NG, matching headings, fill-in-the-blank and more." },
-              { icon: Highlighter, bg: "bg-amber-50",  fg: "text-amber-500",  ring: "hover:ring-amber-200",  title: "3-colour highlighting", desc: "Select any text to mark it yellow, green, or red. Highlights save automatically and stay across page reloads." },
-              { icon: Timer,      bg: "bg-green-50",  fg: "text-green-600",  ring: "hover:ring-green-200",  title: "Real-time countdown",   desc: "60-minute timer that auto-submits when time runs out — just like in the exam room." },
-              { icon: BarChart3,  bg: "bg-blue-50",   fg: "text-blue-500",   ring: "hover:ring-blue-200",   title: "Instant band score",    desc: "Get your official IELTS band score (1.0–9.0) from the conversion table the moment you submit." },
-              { icon: TrendingUp, bg: "bg-purple-50", fg: "text-purple-500", ring: "hover:ring-purple-200", title: "Progress tracking",     desc: "See your full results history, average band score trend, and best score at a glance." },
-              { icon: Brain,      bg: "bg-gray-50",   fg: "text-black",      ring: "hover:ring-rose-200",   title: "Answer explanations",   desc: "Every question shows the correct answer with a clear explanation so you know exactly where you went wrong." },
-            ].map(({ icon: Icon, bg, fg, ring, title, desc }, i) => (
+              { icon: "document" as const,   bg: "bg-gray-50",   ring: "hover:ring-red-200",    title: "Authentic passages",    desc: "Three-passage Academic format with all real question types: MCQ, True/False/NG, matching headings, fill-in-the-blank and more." },
+              { icon: "marker" as const,     bg: "bg-amber-50",  ring: "hover:ring-amber-200",  title: "3-colour highlighting", desc: "Select any text to mark it yellow, green, or red. Highlights save automatically and stay across page reloads." },
+              { icon: "alarm-clock" as const, bg: "bg-green-50", ring: "hover:ring-green-200",  title: "Real-time countdown",   desc: "60-minute timer that auto-submits when time runs out — just like in the exam room." },
+              { icon: "bar-chart" as const,  bg: "bg-blue-50",   ring: "hover:ring-blue-200",   title: "Instant band score",    desc: "Get your official IELTS band score (1.0–9.0) from the conversion table the moment you submit." },
+              { icon: "line-chart" as const, bg: "bg-purple-50", ring: "hover:ring-purple-200", title: "Progress tracking",     desc: "See your full results history, average band score trend, and best score at a glance." },
+              { icon: "brain" as const,      bg: "bg-gray-50",   ring: "hover:ring-rose-200",   title: "Answer explanations",   desc: "Every question shows the correct answer with a clear explanation so you know exactly where you went wrong." },
+            ].map(({ icon, bg, ring, title, desc }, i) => (
               <Reveal key={title} delay={i * 60} dir="up">
                 <div className={`group h-full cursor-default rounded-2xl border border-gray-100 bg-white p-7 shadow-sm ring-2 ring-transparent transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${ring}`}>
                   <div className={`mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl ${bg}`}>
-                    <Icon className={`h-6 w-6 ${fg}`} />
+                    <Icon3D name={icon} size={30} />
                   </div>
                   <h3 className="mb-2 text-lg font-bold text-black">{title}</h3>
                   <p className="text-[15px] leading-relaxed text-gray-400">{desc}</p>
@@ -439,14 +436,14 @@ export default function HomePage() {
           <div className="relative grid gap-8 md:grid-cols-3">
             <div className="absolute left-[calc(16.7%+40px)] right-[calc(16.7%+40px)] top-10 hidden h-px bg-gradient-to-r from-red-200 via-red-300 to-red-200 md:block" />
             {[
-              { step: "01", icon: MousePointer, title: "Choose a test",      desc: "Browse available IELTS Academic Reading tests — each has three passages and 40 questions." },
-              { step: "02", icon: FileText,     title: "Read & answer",      desc: "Work through passages and questions within 60 minutes. Highlight key evidence as you go." },
-              { step: "03", icon: Trophy,       title: "See your band score", desc: "Get your band score instantly. Review every answer with correct answers and clear explanations." },
-            ].map(({ step, icon: Icon, title, desc }, i) => (
+              { step: "01", icon: "cursor" as const,   title: "Choose a test",      desc: "Browse available IELTS Academic Reading tests — each has three passages and 40 questions." },
+              { step: "02", icon: "document" as const, title: "Read & answer",      desc: "Work through passages and questions within 60 minutes. Highlight key evidence as you go." },
+              { step: "03", icon: "trophy" as const,   title: "See your band score", desc: "Get your band score instantly. Review every answer with correct answers and clear explanations." },
+            ].map(({ step, icon, title, desc }, i) => (
               <Reveal key={step} delay={i * 120} dir="up">
                 <div className="flex flex-col items-center text-center">
                   <div className="relative z-10 mb-6 flex h-20 w-20 items-center justify-center rounded-full border-2 border-red-100 bg-white shadow-lg shadow-red-100/50">
-                    <Icon className="h-8 w-8 text-black" />
+                    <Icon3D name={icon} size={44} />
                     <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-[10px] font-black text-white">{step}</span>
                   </div>
                   <h3 className="mb-2 text-xl font-bold text-black">{title}</h3>
@@ -464,8 +461,8 @@ export default function HomePage() {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(ellipse_60%_40%_at_50%_-10%,rgba(254,226,226,0.4),transparent)]" />
 
         <Reveal className="relative mx-auto max-w-2xl px-8 text-center" dir="scale">
-          <div className="mx-auto mb-7 flex h-20 w-20 items-center justify-center rounded-3xl bg-red-500 shadow-2xl shadow-red-200">
-            <GraduationCap className="h-10 w-10 text-white" />
+          <div className="mx-auto mb-7 flex h-20 w-20 items-center justify-center">
+            <Icon3D name="graduation-cap" size={72} />
           </div>
           <h2 className="text-4xl font-black tracking-tight text-black lg:text-5xl">
             Your target band<br />is achievable.
@@ -484,7 +481,7 @@ export default function HomePage() {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400">
             {["No credit card", "Free forever", "Instant access"].map((t) => (
               <span key={t} className="flex items-center gap-1.5">
-                <CheckCircle className="h-4 w-4 text-green-500" /> {t}
+                <Icon3D name="checkmark" size={16} /> {t}
               </span>
             ))}
           </div>
@@ -735,12 +732,17 @@ export default function HomePage() {
       <footer className="border-t border-gray-100 bg-white py-8">
         <div className="mx-auto flex max-w-screen-xl items-center justify-between px-8">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500">
-              <GraduationCap className="h-4 w-4 text-white" />
+            <div className="flex h-8 w-8 items-center justify-center">
+              <Icon3D name="graduation-cap" size={32} />
             </div>
             <span className="font-bold text-black text-sm">Real IELTS <span className="text-red-500">Prep</span></span>
           </div>
-          <p className="text-sm text-gray-400">© 2025 Real IELTS Prep · Free for all students.</p>
+          <p className="text-sm text-gray-400">
+            © 2025 Real IELTS Prep · Free for all students. ·{" "}
+            <a href="https://icons8.com" target="_blank" rel="noopener noreferrer" className="hover:underline">
+              3D icons by Icons8
+            </a>
+          </p>
         </div>
       </footer>
     </div>
