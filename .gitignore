@@ -42,3 +42,6 @@ next-env.d.ts
 # scraper scripts
 scrape_ref.cjs
 scrape_ref2.cjs
+
+# Local Netlify folder
+.netlify
