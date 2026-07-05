@@ -1,7 +1,10 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Icon3D } from "@/components/ui/Icon3D";
 
 const UNIVERSITIES = [
@@ -85,6 +88,83 @@ function useInView(threshold = 0.12) {
     return () => obs.disconnect();
   }, []);
   return [ref, visible] as const;
+}
+
+function SliderArrow({ dir, onClick }: { dir: "prev" | "next"; onClick?: () => void }) {
+  const Icon = dir === "prev" ? ChevronLeft : ChevronRight;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={dir === "prev" ? "Previous" : "Next"}
+      className={`absolute top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white text-black shadow-md transition hover:bg-gray-50 sm:flex ${dir === "prev" ? "-left-4" : "-right-4"}`}
+    >
+      <Icon className="h-4 w-4" />
+    </button>
+  );
+}
+
+function slidesForWidth(w: number) {
+  if (w < 480) return 2;
+  if (w < 768) return 3;
+  if (w < 1024) return 4;
+  if (w < 1280) return 5;
+  return 6;
+}
+
+// react-slick's `responsive` prop only re-evaluates on a resize event (it
+// relies on matchMedia's change listener), so it picks the base
+// `slidesToShow` on first paint even when a phone-width media query already
+// matches. Tracking the width ourselves keeps the initial render correct.
+function useResponsiveSlidesToShow() {
+  // Must match between server and client's first render, so this can't read
+  // `window` directly — the real value is set in the effect below, right
+  // after mount.
+  const [slides, setSlides] = useState(3);
+  useEffect(() => {
+    const update = () => setSlides(slidesForWidth(window.innerWidth));
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  return slides;
+}
+
+function UniversitiesSlider() {
+  const slidesToShow = useResponsiveSlidesToShow();
+  const settings = {
+    dots: false,
+    infinite: true,
+    speed: 600,
+    slidesToShow,
+    slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 2200,
+    pauseOnHover: true,
+    arrows: true,
+    prevArrow: <SliderArrow dir="prev" />,
+    nextArrow: <SliderArrow dir="next" />,
+  };
+  return (
+    <Slider {...settings} className="uni-slider">
+      {UNIVERSITIES.map((uni, i) => (
+        <div key={uni.name} className="px-2 sm:px-3">
+          <div className="flex flex-col items-center gap-3 sm:gap-4 text-center">
+            <div className="mx-auto h-16 w-16 sm:h-24 sm:w-24 md:h-28 md:w-28 animate-float" style={{ animationDelay: `${i * 0.4}s`, animationDuration: `${3 + i * 0.3}s` }}>
+              <UniLogo logo={uni.logo} short={uni.short} color={uni.color} accent={uni.accent} logoBg={(uni as any).logoBg} />
+            </div>
+            <div>
+              <p className="text-xs sm:text-sm font-bold text-black leading-tight">{uni.name}</p>
+              <p className="mt-0.5 text-[10px] sm:text-xs text-gray-400">{uni.location}</p>
+              <span className="mt-2 inline-block rounded-full px-2.5 sm:px-3 py-1 text-[10px] sm:text-xs font-bold text-white" style={{ background: uni.color }}>
+                Band {uni.band}
+              </span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </Slider>
+  );
 }
 
 function Reveal({ children, className = "", delay = 0, dir = "up" }: {
@@ -363,24 +443,9 @@ export default function HomePage() {
             </p>
           </Reveal>
 
-          <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-2 sm:mx-0 sm:justify-center sm:gap-8 sm:overflow-visible sm:px-0">
-            {UNIVERSITIES.map((uni, i) => (
-              <Reveal key={uni.name} delay={i * 80} dir="up" className="flex-shrink-0 snap-center">
-                <div className="flex w-20 sm:w-28 flex-col items-center gap-3 sm:gap-4 text-center">
-                  <div className="h-16 w-16 sm:h-24 sm:w-24 md:h-28 md:w-28 animate-float" style={{ animationDelay: `${i * 0.4}s`, animationDuration: `${3 + i * 0.3}s` }}>
-                    <UniLogo logo={uni.logo} short={uni.short} color={uni.color} accent={uni.accent} logoBg={(uni as any).logoBg} />
-                  </div>
-                  <div>
-                    <p className="text-xs sm:text-sm font-bold text-black leading-tight">{uni.name}</p>
-                    <p className="mt-0.5 text-[10px] sm:text-xs text-gray-400">{uni.location}</p>
-                    <span className="mt-2 inline-block rounded-full px-2.5 sm:px-3 py-1 text-[10px] sm:text-xs font-bold text-white" style={{ background: uni.color }}>
-                      Band {uni.band}
-                    </span>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+          <Reveal dir="up">
+            <UniversitiesSlider />
+          </Reveal>
           <Reveal className="mt-10 text-center">
             <p className="text-sm text-gray-400">* Requirements may vary by faculty. Always check the official university website.</p>
           </Reveal>
@@ -504,34 +569,9 @@ export default function HomePage() {
             <Reveal>
               <div className="flex flex-col rounded-2xl border border-gray-200 bg-white px-7 py-8 h-full shadow-sm">
                 <div className="mb-6">
-                  {/* Cartoon Book */}
+                  {/* Book */}
                   <div className="mb-5 flex justify-center">
-                    <svg viewBox="0 0 96 80" className="h-20 w-24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <ellipse cx="48" cy="75" rx="26" ry="4" fill="#e5e7eb"/>
-                      {/* Left page */}
-                      <path d="M10 14Q10 8 16 8L44 8L44 68L16 68Q10 68 10 62Z" fill="#DBEAFE" stroke="#1f2937" strokeWidth="2.5" strokeLinejoin="round"/>
-                      {/* Right page */}
-                      <path d="M52 8L80 8Q86 8 86 14L86 62Q86 68 80 68L52 68Z" fill="#FEF9C3" stroke="#1f2937" strokeWidth="2.5" strokeLinejoin="round"/>
-                      {/* Spine */}
-                      <rect x="43" y="8" width="10" height="60" rx="1" fill="#92400E" stroke="#1f2937" strokeWidth="2"/>
-                      <rect x="45" y="8" width="6" height="60" fill="#B45309"/>
-                      {/* Left lines */}
-                      <rect x="17" y="22" width="20" height="3" rx="1.5" fill="#93C5FD"/>
-                      <rect x="17" y="30" width="20" height="3" rx="1.5" fill="#93C5FD"/>
-                      <rect x="17" y="38" width="14" height="3" rx="1.5" fill="#93C5FD"/>
-                      <rect x="17" y="46" width="20" height="3" rx="1.5" fill="#93C5FD"/>
-                      <rect x="17" y="54" width="12" height="3" rx="1.5" fill="#93C5FD"/>
-                      {/* Right lines */}
-                      <rect x="59" y="22" width="20" height="3" rx="1.5" fill="#FCD34D"/>
-                      <rect x="59" y="30" width="20" height="3" rx="1.5" fill="#FCD34D"/>
-                      <rect x="59" y="38" width="14" height="3" rx="1.5" fill="#FCD34D"/>
-                      <rect x="59" y="46" width="20" height="3" rx="1.5" fill="#FCD34D"/>
-                      <rect x="59" y="54" width="16" height="3" rx="1.5" fill="#FCD34D"/>
-                      {/* Bookmark */}
-                      <path d="M28 8L28 22L24 18L20 22L20 8Z" fill="#EF4444" stroke="#1f2937" strokeWidth="2" strokeLinejoin="round"/>
-                      {/* Shine */}
-                      <path d="M14 13Q18 10 22 13" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
-                    </svg>
+                    <Icon3D name="book" size={80} />
                   </div>
                   <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Free</p>
                   <div className="flex items-baseline gap-1">
@@ -543,9 +583,7 @@ export default function HomePage() {
                 <ul className="space-y-3 flex-1 mb-7">
                   {["10 practice reading tests","All question types","Instant band scoring"].map(f => (
                     <li key={f} className="flex items-center gap-2.5 text-sm text-gray-500">
-                      <svg viewBox="0 0 20 20" className="h-4 w-4 shrink-0 text-gray-400" fill="currentColor">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-5.121-5.121a1 1 0 011.414-1.414L8.414 12.172l6.879-6.879a1 1 0 011.414 0z" clipRule="evenodd"/>
-                      </svg>
+                      <Icon3D name="checkmark" size={16} className="shrink-0" />
                       {f}
                     </li>
                   ))}
@@ -561,35 +599,9 @@ export default function HomePage() {
             <Reveal>
               <div className="flex flex-col rounded-2xl border-2 border-red-200 bg-rose-50 px-7 py-8 h-full shadow-md shadow-red-100">
                 <div className="mb-6">
-                  {/* Cartoon Rocket */}
+                  {/* Rocket */}
                   <div className="mb-5 flex justify-center">
-                    <svg viewBox="0 0 96 96" className="h-24 w-24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      {/* Stars */}
-                      <path d="M14 22L15 25L18 26L15 27L14 30L13 27L10 26L13 25Z" fill="#FCD34D"/>
-                      <path d="M78 16L79 19L82 20L79 21L78 24L77 21L74 20L77 19Z" fill="#FCD34D"/>
-                      <circle cx="82" cy="52" r="2.5" fill="#FCD34D"/>
-                      <circle cx="12" cy="58" r="2" fill="#FCD34D"/>
-                      <circle cx="76" cy="72" r="1.5" fill="#93C5FD"/>
-                      {/* Flame outer */}
-                      <path d="M36 72Q33 84 48 88Q63 84 60 72Z" fill="#FCD34D" stroke="#1f2937" strokeWidth="2.5" strokeLinejoin="round"/>
-                      {/* Flame inner */}
-                      <path d="M39 72Q37 81 48 84Q59 81 57 72Z" fill="#F97316"/>
-                      <path d="M42 72Q41 78 48 80Q55 78 54 72Z" fill="#EF4444"/>
-                      {/* Left fin */}
-                      <path d="M30 60L18 74L32 68Z" fill="#3B82F6" stroke="#1f2937" strokeWidth="2.5" strokeLinejoin="round"/>
-                      {/* Right fin */}
-                      <path d="M66 60L78 74L64 68Z" fill="#3B82F6" stroke="#1f2937" strokeWidth="2.5" strokeLinejoin="round"/>
-                      {/* Rocket body */}
-                      <path d="M48 8C48 8 28 24 26 58L48 68L70 58C68 24 48 8 48 8Z" fill="#EFF6FF" stroke="#1f2937" strokeWidth="2.5" strokeLinejoin="round"/>
-                      {/* Nose */}
-                      <path d="M48 8C44 20 44 28 48 30C52 28 52 20 48 8Z" fill="#3B82F6" stroke="#1f2937" strokeWidth="2.5" strokeLinejoin="round"/>
-                      {/* Body stripe */}
-                      <path d="M28 44L68 44" stroke="#BFDBFE" strokeWidth="2" strokeLinecap="round"/>
-                      {/* Window */}
-                      <circle cx="48" cy="44" r="11" fill="#BFDBFE" stroke="#1f2937" strokeWidth="2.5"/>
-                      <circle cx="48" cy="44" r="7" fill="#3B82F6" stroke="#1f2937" strokeWidth="2"/>
-                      <circle cx="45" cy="41" r="2.5" fill="white" opacity="0.7"/>
-                    </svg>
+                    <Icon3D name="rocket" size={96} />
                   </div>
                   <p className="text-xs font-bold uppercase tracking-widest text-red-400 mb-1">Lite</p>
                   <div className="flex items-baseline gap-1">
@@ -601,9 +613,7 @@ export default function HomePage() {
                 <ul className="space-y-3 flex-1 mb-7">
                   {["Everything in Free","All IELTS Volume tests","Unlimited attempts"].map(f => (
                     <li key={f} className="flex items-center gap-2.5 text-sm text-gray-700">
-                      <svg viewBox="0 0 20 20" className="h-4 w-4 shrink-0 text-red-400" fill="currentColor">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-5.121-5.121a1 1 0 011.414-1.414L8.414 12.172l6.879-6.879a1 1 0 011.414 0z" clipRule="evenodd"/>
-                      </svg>
+                      <Icon3D name="checkmark" size={16} className="shrink-0" />
                       {f}
                     </li>
                   ))}
@@ -623,46 +633,14 @@ export default function HomePage() {
               <div className="flex flex-col rounded-2xl border-2 border-red-500 bg-gradient-to-b from-red-500 to-red-600 px-7 py-8 h-full shadow-xl shadow-red-300/50 relative">
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1 text-xs font-bold text-red-600 shadow-md">
-                    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="currentColor">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                    </svg>
+                    <Icon3D name="star" size={16} />
                     Most popular
                   </span>
                 </div>
                 <div className="mb-6">
-                  {/* Cartoon Trophy */}
+                  {/* Trophy */}
                   <div className="mb-5 flex justify-center">
-                    <svg viewBox="0 0 96 96" className="h-24 w-24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      {/* Sparkles */}
-                      <path d="M16 24L17 27L20 28L17 29L16 32L15 29L12 28L15 27Z" fill="#FCD34D"/>
-                      <path d="M80 20L81 23L84 24L81 25L80 28L79 25L76 24L79 23Z" fill="#FCD34D"/>
-                      <circle cx="84" cy="46" r="3" fill="#FCD34D"/>
-                      <circle cx="10" cy="50" r="2.5" fill="#FCD34D"/>
-                      <path d="M78 62L79 64L81 65L79 66L78 68L77 66L75 65L77 64Z" fill="#E9D5FF"/>
-                      {/* Base plate */}
-                      <rect x="30" y="76" width="36" height="8" rx="4" fill="#92400E" stroke="#1f2937" strokeWidth="2.5"/>
-                      {/* Stem */}
-                      <rect x="30" y="68" width="36" height="10" rx="3" fill="#B45309" stroke="#1f2937" strokeWidth="2"/>
-                      {/* Stem neck */}
-                      <rect x="40" y="62" width="16" height="8" fill="#D97706" stroke="#1f2937" strokeWidth="2"/>
-                      {/* Left handle */}
-                      <path d="M30 32Q16 32 16 44Q16 56 30 54" stroke="#B45309" strokeWidth="6" strokeLinecap="round" fill="none"/>
-                      <path d="M30 32Q16 32 16 44Q16 56 30 54" stroke="#FCD34D" strokeWidth="3" strokeLinecap="round" fill="none"/>
-                      {/* Right handle */}
-                      <path d="M66 32Q80 32 80 44Q80 56 66 54" stroke="#B45309" strokeWidth="6" strokeLinecap="round" fill="none"/>
-                      <path d="M66 32Q80 32 80 44Q80 56 66 54" stroke="#FCD34D" strokeWidth="3" strokeLinecap="round" fill="none"/>
-                      {/* Cup body */}
-                      <path d="M22 14L30 64L66 64L74 14Z" fill="#FCD34D" stroke="#1f2937" strokeWidth="2.5" strokeLinejoin="round"/>
-                      {/* Cup inner shadow */}
-                      <path d="M26 18L32 60L64 60L70 18Z" fill="#FBBF24"/>
-                      <path d="M30 22L34 56L62 56L66 22Z" fill="#FCD34D"/>
-                      {/* Top rim */}
-                      <rect x="22" y="12" width="52" height="6" rx="3" fill="#F59E0B" stroke="#1f2937" strokeWidth="2.5"/>
-                      {/* Star on cup */}
-                      <path d="M48 28L50 34L56 34L51 38L53 44L48 40L43 44L45 38L40 34L46 34Z" fill="#FEF3C7" stroke="#92400E" strokeWidth="1.5" strokeLinejoin="round"/>
-                      {/* Shine on cup */}
-                      <path d="M28 20Q32 18 36 20" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.6"/>
-                    </svg>
+                    <Icon3D name="trophy" size={96} />
                   </div>
                   <p className="text-xs font-bold uppercase tracking-widest text-red-200 mb-1">Pro</p>
                   <div className="flex items-baseline gap-1">
@@ -679,9 +657,7 @@ export default function HomePage() {
                     "Maximum score guarantee",
                   ].map(f => (
                     <li key={f} className="flex items-center gap-2.5 text-sm text-red-50">
-                      <svg viewBox="0 0 20 20" className="h-4 w-4 shrink-0 text-red-200" fill="currentColor">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-5.121-5.121a1 1 0 011.414-1.414L8.414 12.172l6.879-6.879a1 1 0 011.414 0z" clipRule="evenodd"/>
-                      </svg>
+                      <Icon3D name="checkmark" size={16} className="shrink-0" />
                       {f}
                     </li>
                   ))}

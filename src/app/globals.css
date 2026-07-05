@@ -122,11 +122,11 @@ body {
 .paused { animation-play-state: paused; }
 .running { animation-play-state: running; }
 
-/* Hide scrollbar on horizontal sliders */
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* Universities slick slider */
+.uni-slider .slick-track {
+  display: flex;
+  align-items: flex-start;
 }
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+.uni-slider .slick-slide {
+  height: auto;
 }
