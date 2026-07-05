@@ -2,10 +2,8 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  GraduationCap, LayoutDashboard, BookOpen, Headphones,
-  Shield, LogOut, ChevronDown, Menu, X, User,
-} from "lucide-react";
+import { ChevronDown, Menu, X, LayoutDashboard, BookOpen, Headphones } from "lucide-react";
+import { Icon3D, Icon3DName } from "@/components/ui/Icon3D";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 
@@ -24,12 +22,16 @@ export default function Navbar() {
     pathname === href || pathname.startsWith(href + "/") ||
     (href === "/reading" && (pathname === "/tests" || pathname.startsWith("/tests/")));
 
-  const allNav: { href: string; label: string; icon: React.ElementType; live: boolean }[] = [
+  type NavItem =
+    | { href: string; label: string; live: boolean; icon: React.ElementType; icon3d?: undefined }
+    | { href: string; label: string; live: boolean; icon3d: Icon3DName; icon?: undefined };
+
+  const allNav: NavItem[] = [
     { href: "/dashboard",   label: "Dashboard",  icon: LayoutDashboard, live: true  },
     { href: "/reading",     label: "Reading",    icon: BookOpen,        live: true  },
     { href: "/listening",   label: "Listening",  icon: Headphones,      live: false },
-    { href: "/profile",     label: "Profil",     icon: User,            live: true  },
-    ...(user?.role === "ADMIN" ? [{ href: "/admin/tests", label: "Admin", icon: Shield, live: true }] : []),
+    { href: "/profile",     label: "Profil",     icon3d: "account",     live: true  },
+    ...(user?.role === "ADMIN" ? [{ href: "/admin/tests", label: "Admin", icon3d: "shield" as const, live: true }] : []),
   ];
 
   return (
@@ -39,8 +41,8 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-500">
-              <GraduationCap className="h-4 w-4 text-white" />
+            <div className="flex h-8 w-8 items-center justify-center">
+              <Icon3D name="graduation-cap" size={32} />
             </div>
             <div className="leading-tight hidden sm:block">
               <div className="text-sm font-extrabold tracking-tight text-black">Real IELTS</div>
@@ -77,7 +79,7 @@ export default function Navbar() {
             {user?.role === "ADMIN" && (
               <Link href="/admin/tests"
                 className={`relative flex items-center gap-1.5 px-3 py-4 text-sm font-medium transition-colors ${pathname.startsWith("/admin") ? "text-black" : "text-gray-500 hover:text-black"}`}>
-                <Shield className="h-4 w-4" />
+                <Icon3D name="shield" size={18} />
                 Admin
                 {pathname.startsWith("/admin") && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-500 rounded-full" />}
               </Link>
@@ -107,11 +109,11 @@ export default function Navbar() {
                   </div>
                   <Link href="/profile" onClick={() => setMenuOpen(false)}
                     className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-black hover:bg-gray-50 transition">
-                    <User className="h-4 w-4" /> Profil
+                    <Icon3D name="account" size={18} /> Profil
                   </Link>
                   <button onClick={() => { setMenuOpen(false); logout(); }}
                     className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-black hover:bg-gray-50 transition">
-                    <LogOut className="h-4 w-4" /> Sign out
+                    <Icon3D name="leave" size={18} /> Sign out
                   </button>
                 </div>
               )}
@@ -134,8 +136,8 @@ export default function Navbar() {
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-500">
-                  <GraduationCap className="h-4 w-4 text-white" />
+                <div className="flex h-8 w-8 items-center justify-center">
+                  <Icon3D name="graduation-cap" size={32} />
                 </div>
                 <div className="leading-tight">
                   <div className="text-sm font-extrabold text-black">Real IELTS</div>
@@ -162,18 +164,22 @@ export default function Navbar() {
 
             {/* Nav items */}
             <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-              {allNav.map(({ href, label, icon: Icon, live }) => {
+              {allNav.map((item) => {
+                const { href, label, live } = item;
                 const active = isActive(href) || pathname === href;
+                const iconEl = item.icon3d
+                  ? <Icon3D name={item.icon3d} size={20} />
+                  : <item.icon className="h-4 w-4" />;
                 if (!live) return (
                   <div key={href} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-gray-300">
-                    <Icon className="h-4 w-4" /> {label}
+                    {iconEl} {label}
                     <span className="ml-auto rounded-full bg-gray-100 px-2 py-0.5 text-[9px] font-bold uppercase text-gray-400">soon</span>
                   </div>
                 );
                 return (
                   <Link key={href} href={href} onClick={() => setMobileOpen(false)}
                     className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${active ? "bg-red-50 text-red-600" : "text-gray-600 hover:bg-gray-50 hover:text-black"}`}>
-                    <Icon className="h-4 w-4" /> {label}
+                    {iconEl} {label}
                   </Link>
                 );
               })}
@@ -183,7 +189,7 @@ export default function Navbar() {
             <div className="border-t border-gray-100 px-3 py-3">
               <button onClick={() => { setMobileOpen(false); logout(); }}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-black transition">
-                <LogOut className="h-4 w-4" /> Sign out
+                <Icon3D name="leave" size={20} /> Sign out
               </button>
             </div>
           </div>

@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { BookOpen, Clock, TrendingUp, ArrowRight, CheckCircle, Target, ChevronRight, Headphones } from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
+import { Icon3D, Icon3DName } from "@/components/ui/Icon3D";
 import { useAuth } from "@/hooks/useAuth";
 import { TestResult } from "@/types";
 import api from "@/lib/api";
@@ -37,9 +38,9 @@ function BandBadge({ score }: { score: number }) {
 
 /* ── Stat card with count-up ───────────────────────── */
 function StatCard({
-  label, rawValue, icon: Icon, color, sub, delay, suffix = "", isFloat = false
+  label, rawValue, icon, color, sub, delay, suffix = "", isFloat = false
 }: {
-  label: string; rawValue: number; icon: any; color: string; sub?: string;
+  label: string; rawValue: number; icon: Icon3DName; color: string; sub?: string;
   delay: number; suffix?: string; isFloat?: boolean;
 }) {
   const [visible, setVisible] = useState(false);
@@ -59,7 +60,7 @@ function StatCard({
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
-        <Icon className="h-5 w-5" />
+        <Icon3D name={icon} size={24} />
       </div>
       <div className="text-2xl font-extrabold text-black">{rawValue === 0 ? "—" : display + suffix}</div>
       <div className="mt-0.5 text-sm text-gray-500">{label}</div>
@@ -143,14 +144,14 @@ export default function DashboardPage() {
       {/* Skills modules */}
       <div className="mb-6 sm:mb-8 grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-2">
         {[
-          { icon: BookOpen,   label: "Reading",   sub: "Practice now",   color: "bg-red-50",  fg: "text-red-500",  href: "/reading", live: true  },
-          { icon: Headphones, label: "Listening", sub: "Coming soon",    color: "bg-blue-50", fg: "text-blue-400", href: null,       live: false },
-        ].map(({ icon: Icon, label, sub, color, fg, href, live }) => (
+          { icon: "book" as const,    label: "Reading",   sub: "Practice now",   color: "bg-red-50",  href: "/reading", live: true  },
+          { icon: "headset" as const, label: "Listening", sub: "Coming soon",    color: "bg-blue-50", href: null,       live: false },
+        ].map(({ icon, label, sub, color, href, live }) => (
           href ? (
             <Link key={label} href={href}
               className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
               <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${color}`}>
-                <Icon className={`h-5 w-5 ${fg}`} />
+                <Icon3D name={icon} size={24} />
               </div>
               <div>
                 <p className="font-bold text-black text-sm">{label}</p>
@@ -163,7 +164,7 @@ export default function DashboardPage() {
             <div key={label}
               className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-4 opacity-50">
               <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${color}`}>
-                <Icon className={`h-5 w-5 ${fg}`} />
+                <Icon3D name={icon} size={24} />
               </div>
               <div>
                 <p className="font-bold text-black text-sm">{label}</p>
@@ -176,14 +177,14 @@ export default function DashboardPage() {
 
       {/* Stat cards ─ count-up + staggered fade */}
       <div className="mb-6 sm:mb-8 grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Tests Completed" rawValue={completed.length} icon={BookOpen} color="bg-gray-50 text-black" delay={0} />
-        <StatCard label="Average Band" rawValue={avgBandNum} icon={TrendingUp} color="bg-green-50 text-green-600" sub="IELTS scale 1–9" delay={80} isFloat suffix="" />
-        <StatCard label="Best Band" rawValue={bestBand} icon={Target} color="bg-amber-50 text-amber-500" delay={160} />
+        <StatCard label="Tests Completed" rawValue={completed.length} icon="book" color="bg-gray-50" delay={0} />
+        <StatCard label="Average Band" rawValue={avgBandNum} icon="line-chart" color="bg-green-50" sub="IELTS scale 1–9" delay={80} isFloat suffix="" />
+        <StatCard label="Best Band" rawValue={bestBand} icon="goal" color="bg-amber-50" delay={160} />
         <StatCard
           label="Study Time"
           rawValue={totalMinutes}
-          icon={Clock}
-          color="bg-blue-50 text-blue-500"
+          icon="time"
+          color="bg-blue-50"
           delay={240}
           suffix="m"
         />
@@ -208,7 +209,7 @@ export default function DashboardPage() {
                 </div>
               ) : results.length === 0 ? (
                 <div className="py-12 text-center">
-                  <BookOpen className="mx-auto mb-3 h-10 w-10 text-red-100" />
+                  <Icon3D name="book" size={56} className="mx-auto mb-3 opacity-60" />
                   <p className="text-sm text-gray-400">No tests taken yet.</p>
                   <Link href="/tests" className="mt-2 inline-block text-sm font-medium text-black hover:underline">
                     Browse tests →
@@ -225,7 +226,7 @@ export default function DashboardPage() {
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 group-hover:scale-110 transition-transform">
-                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <Icon3D name="checkmark" size={20} />
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-black">{r.test?.title}</p>
