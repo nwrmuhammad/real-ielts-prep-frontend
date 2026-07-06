@@ -63,6 +63,11 @@ function extractVolumeNumber(title: string): number | null {
   return match ? parseInt(match[1]) : null;
 }
 
+function extractTestNumber(title: string): number | null {
+  const match = title.match(/test\s*(\d+)/i);
+  return match ? parseInt(match[1]) : null;
+}
+
 type Filter = "practice" | "volume" | "predicted";
 
 const FILTERS: { key: Filter; label: string }[] = [
@@ -108,7 +113,11 @@ export default function TestsPage() {
       return false;
     })
     .sort((a, b) => {
-      if (filter === "volume") return (extractVolumeNumber(a.title) ?? 0) - (extractVolumeNumber(b.title) ?? 0);
+      if (filter === "volume") {
+        const volDiff = (extractVolumeNumber(a.title) ?? 0) - (extractVolumeNumber(b.title) ?? 0);
+        if (volDiff !== 0) return volDiff;
+        return (extractTestNumber(a.title) ?? 0) - (extractTestNumber(b.title) ?? 0);
+      }
       if (filter === "predicted") return (a.passageCategory ?? 99) - (b.passageCategory ?? 99);
       return 0;
     });
@@ -224,7 +233,9 @@ export default function TestsPage() {
                     <div className="min-w-0">
                       <p className="text-base font-semibold text-gray-900 line-clamp-2 leading-snug">
                         {filter === "volume" && extractVolumeNumber(test.title) !== null
-                          ? `TEST ${extractVolumeNumber(test.title)}`
+                          ? extractTestNumber(test.title) !== null
+                            ? `TEST ${extractTestNumber(test.title)}`
+                            : `TEST ${extractVolumeNumber(test.title)}`
                           : test.title}
                       </p>
                       <div className="mt-2 flex items-center gap-2.5 text-xs text-gray-400">
