@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { TestResult, Answer } from "@/types";
 import api from "@/lib/api";
@@ -78,6 +79,17 @@ export default function ResultDetailPage() {
             </tbody>
           </table>
         </div>
+
+        {result.test?.id && (
+          <div className="mt-6 flex justify-center">
+            <Link
+              href={`/tests/${result.test.id}?resultId=${result.id}`}
+              className="rounded-full bg-black px-6 py-2.5 text-sm font-bold text-white hover:bg-gray-800 transition"
+            >
+              Analyze
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

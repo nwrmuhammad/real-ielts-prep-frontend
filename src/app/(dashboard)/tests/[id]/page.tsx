@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Highlighter, X, Play, Pause, ChevronLeft, Scan } from "lucide-react";
 import { Test, Question } from "@/types";
 import api from "@/lib/api";
@@ -310,6 +310,10 @@ const DEFAULT_FONT_IDX = 3;
 export default function TestPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const reviewResultId = searchParams.get("resultId");
+  const isReview = !!reviewResultId;
+  const [reviewCorrectness, setReviewCorrectness] = useState<Record<string, boolean>>({});
   const [test, setTest]           = useState<Test | null>(null);
   const [resultId, setResultId]   = useState<string | null>(null);
   const [answers, setAnswers]     = useState<Record<string, string>>({});
@@ -340,9 +344,29 @@ export default function TestPage() {
 
   useEffect(() => { api.get(`/tests/${id}`).then((r) => setTest(r.data)); }, [id]);
 
+  // Analyze flow — load the submitted answers + correctness and jump
+  // straight into the test UI instead of the normal "Start Test" screen.
+  useEffect(() => {
+    if (!isReview || !reviewResultId) return;
+    api.get(`/results/${reviewResultId}`).then((r) => {
+      const data = r.data;
+      const ansMap: Record<string, string> = {};
+      const correctMap: Record<string, boolean> = {};
+      for (const a of data.answers ?? []) {
+        ansMap[a.questionId] = a.userAnswer ?? "";
+        correctMap[a.questionId] = a.isCorrect;
+      }
+      setAnswers(ansMap);
+      setReviewCorrectness(correctMap);
+      setResultId(reviewResultId);
+      startTimeRef.current = Date.now();
+      setStarted(true);
+    });
+  }, [isReview, reviewResultId]);
+
   // Restore draft from localStorage after test loads
   useEffect(() => {
-    if (!test || !id) return;
+    if (!test || !id || isReview) return;
     try {
       const raw = localStorage.getItem(`ielts_draft_${id}`);
       if (!raw) return;
@@ -364,7 +388,7 @@ export default function TestPage() {
 
   // Persist draft to localStorage whenever key state changes
   useEffect(() => {
-    if (!started || !resultId || !id) return;
+    if (!started || !resultId || !id || isReview) return;
     try {
       localStorage.setItem(`ielts_draft_${id}`, JSON.stringify({
         resultId,
@@ -604,6 +628,9 @@ export default function TestPage() {
 
   // Pre-test
   if (!started) {
+    if (isReview) {
+      return <div className="flex h-full items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-800" /></div>;
+    }
     const passages = test.passages ?? [];
     return (
       <div className="flex h-full items-center justify-center bg-white px-4">
@@ -756,7 +783,11 @@ export default function TestPage() {
           <span className="text-xs sm:text-sm font-semibold text-black truncate max-w-[100px] sm:max-w-xs">{test.title}</span>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-3">
-          <Timer seconds={timerInitialSeconds || test.timeLimit * 60} onExpire={() => setTimeUpModal(true)} />
+          {isReview ? (
+            <span className="rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-semibold text-gray-500">Review Mode</span>
+          ) : (
+            <Timer seconds={timerInitialSeconds || test.timeLimit * 60} onExpire={() => setTimeUpModal(true)} />
+          )}
           {/* Font size — hidden on mobile */}
           <div className="hidden sm:flex items-center gap-0.5 rounded border border-gray-200 px-1 py-0.5">
             <button onClick={() => setFontIdx((i) => Math.max(0, i - 1))} disabled={fontIdx === 0}
@@ -781,8 +812,10 @@ export default function TestPage() {
             )}
           </button>
           <button onClick={handleSubmit} disabled={submitting}
-            className="rounded-lg border border-gray-200 px-3 sm:px-5 py-1.5 text-xs sm:text-sm font-semibold text-black hover:bg-gray-50 disabled:opacity-50 transition">
-            {submitting ? "…" : "Submit"}
+            className={`rounded-lg px-3 sm:px-5 py-1.5 text-xs sm:text-sm font-semibold transition disabled:opacity-50 ${
+              isReview ? "bg-black text-white hover:bg-gray-800" : "border border-gray-200 text-black hover:bg-gray-50"
+            }`}>
+            {submitting ? "…" : isReview ? "Finish Test" : "Submit"}
           </button>
         </div>
       </div>
@@ -973,7 +1006,15 @@ export default function TestPage() {
 
                   {/* Questions in this group */}
                   {group.questions.map((q) => (
-                    <div key={q.id} id={`q-${q.id}`}>
+                    <div key={q.id} id={`q-${q.id}`} className={
+                      isReview
+                        ? reviewCorrectness[q.id] === true
+                          ? "border-l-4 border-green-500 bg-green-50/60 pl-3 -ml-3.5 rounded-r-md"
+                          : reviewCorrectness[q.id] === false
+                            ? "border-l-4 border-red-500 bg-red-50/60 pl-3 -ml-3.5 rounded-r-md"
+                            : ""
+                        : ""
+                    }>
                       <QuestionBlock
                         question={q}
                         answer={answers[q.id] ?? ""}
