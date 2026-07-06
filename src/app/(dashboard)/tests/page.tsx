@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Lock, Clock, BookOpen } from "lucide-react";
+import { Lock, Clock, BookOpen, Folder, ChevronLeft } from "lucide-react";
 import { Test } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/api";
@@ -84,6 +84,7 @@ export default function TestsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("practice");
   const [passageCat, setPassageCat] = useState<number | null>(null);
+  const [selectedVolume, setSelectedVolume] = useState<number | null>(null);
   const [showModal, setShowModal] = useState<"volume" | "predicted" | null>(null);
   const [inProgressIds, setInProgressIds] = useState<Set<string>>(new Set());
 
@@ -101,9 +102,17 @@ export default function TestsPage() {
     return true;
   };
 
+  const volumeTestsAll = tests.filter((t) => !isPredicted(t) && extractVolumeNumber(t.title) !== null);
+  const volumeNumbers = Array.from(
+    new Set(volumeTestsAll.map((t) => extractVolumeNumber(t.title) as number))
+  ).sort((a, b) => a - b);
+
   const visible = tests
     .filter((t) => {
-      if (filter === "volume")    return !isPredicted(t) && extractVolumeNumber(t.title) !== null;
+      if (filter === "volume") {
+        if (selectedVolume === null) return false;
+        return !isPredicted(t) && extractVolumeNumber(t.title) === selectedVolume;
+      }
       if (filter === "practice")  return !isPredicted(t) && extractVolumeNumber(t.title) === null;
       if (filter === "predicted") {
         if (!isPredicted(t)) return false;
@@ -113,11 +122,7 @@ export default function TestsPage() {
       return false;
     })
     .sort((a, b) => {
-      if (filter === "volume") {
-        const volDiff = (extractVolumeNumber(a.title) ?? 0) - (extractVolumeNumber(b.title) ?? 0);
-        if (volDiff !== 0) return volDiff;
-        return (extractTestNumber(a.title) ?? 0) - (extractTestNumber(b.title) ?? 0);
-      }
+      if (filter === "volume") return (extractTestNumber(a.title) ?? 0) - (extractTestNumber(b.title) ?? 0);
       if (filter === "predicted") return (a.passageCategory ?? 99) - (b.passageCategory ?? 99);
       return 0;
     });
@@ -143,7 +148,7 @@ export default function TestsPage() {
             {FILTERS.map(({ key, label }) => (
               <button
                 key={key}
-                onClick={() => { setFilter(key); setPassageCat(null); }}
+                onClick={() => { setFilter(key); setPassageCat(null); setSelectedVolume(null); }}
                 className={`rounded-full border px-5 py-2 text-sm font-semibold transition ${
                   filter === key
                     ? key === "predicted"
@@ -204,12 +209,48 @@ export default function TestsPage() {
             </div>
           )}
 
+          {filter === "volume" && selectedVolume !== null && (
+            <button
+              onClick={() => setSelectedVolume(null)}
+              className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-900 transition"
+            >
+              <ChevronLeft className="h-4 w-4" /> Volume test 7-8-9
+            </button>
+          )}
+
           {loading ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {[1,2,3,4,5,6,7,8].map((i) => (
                 <div key={i} className="h-28 animate-pulse rounded-2xl bg-gray-100" />
               ))}
             </div>
+          ) : filter === "volume" && selectedVolume === null ? (
+            volumeNumbers.length === 0 ? (
+              <div className="py-24 text-center text-gray-400">No tests available yet.</div>
+            ) : (
+              <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {volumeNumbers.map((vol) => {
+                  const count = volumeTestsAll.filter((t) => extractVolumeNumber(t.title) === vol).length;
+                  return (
+                    <button
+                      key={vol}
+                      onClick={() => setSelectedVolume(vol)}
+                      className="flex h-full flex-col items-start gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-5 text-left transition hover:border-gray-300 hover:shadow-md"
+                    >
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50">
+                        <Folder className="h-6 w-6 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-base font-semibold text-gray-900">Vol {vol}</p>
+                        <p className="mt-0.5 text-xs font-medium text-gray-400">
+                          {count} test{count === 1 ? "" : "s"}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )
           ) : visible.length === 0 ? (
             <div className="py-24 text-center text-gray-400">No tests available yet.</div>
           ) : (
