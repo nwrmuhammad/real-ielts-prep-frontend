@@ -66,7 +66,7 @@ function extractVolumeNumber(title: string): number | null {
 type Filter = "practice" | "volume" | "predicted";
 
 const FILTERS: { key: Filter; label: string }[] = [
-  { key: "practice",  label: "Free Practice" },
+  { key: "practice",  label: "Free Trial" },
   { key: "volume",    label: "IELTS Volume"  },
   { key: "predicted", label: "Predicted"     },
 ];
@@ -120,7 +120,7 @@ export default function TestsPage() {
     }
     const vol = extractVolumeNumber(t.title);
     if (vol !== null) return `Vol ${vol}`;
-    return "Free Practice";
+    return "Free Trial";
   }
 
   return (
