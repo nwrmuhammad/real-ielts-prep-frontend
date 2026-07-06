@@ -23,7 +23,8 @@ export type Icon3DName =
   | "dashboard"
   | "shield"
   | "leave"
-  | "account";
+  | "account"
+  | "folder";
 
 export function Icon3D({ name, size = 40, className = "" }: { name: Icon3DName; size?: number; className?: string }) {
   return (

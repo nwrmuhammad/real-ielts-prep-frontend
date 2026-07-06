@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Lock, Clock, BookOpen, Folder, ChevronLeft } from "lucide-react";
+import { Lock, Clock, BookOpen, ChevronLeft } from "lucide-react";
+import { Icon3D } from "@/components/ui/Icon3D";
 import { Test } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/api";
@@ -237,9 +238,7 @@ export default function TestsPage() {
                       onClick={() => setSelectedVolume(vol)}
                       className="flex h-full flex-col items-start gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-5 text-left transition hover:border-gray-300 hover:shadow-md"
                     >
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50">
-                        <Folder className="h-6 w-6 text-blue-500" />
-                      </div>
+                      <Icon3D name="folder" size={48} />
                       <div>
                         <p className="text-base font-semibold text-gray-900">Vol {vol}</p>
                         <p className="mt-0.5 text-xs font-medium text-gray-400">
