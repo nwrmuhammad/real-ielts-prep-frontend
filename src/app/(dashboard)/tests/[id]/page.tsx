@@ -325,6 +325,7 @@ export default function TestPage() {
   const [fontIdx, setFontIdx]     = useState(DEFAULT_FONT_IDX);
   const [wordPopup, setWordPopup] = useState<WordPopup | null>(null);
   const [timerInitialSeconds, setTimerInitialSeconds] = useState(0);
+  const [timeUpModal, setTimeUpModal] = useState(false);
   const passageRef   = useRef<HTMLDivElement>(null);
   const questionsRef = useRef<HTMLDivElement>(null);
   const startTimeRef = useRef<number>(0);
@@ -663,6 +664,20 @@ export default function TestPage() {
 
   return (
     <div className="flex h-full flex-col bg-white" style={{ ["--mobile-tab" as string]: mobileTab }}>
+      {/* Time's up reminder — does not submit the test */}
+      {timeUpModal && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-xs rounded-2xl bg-white p-6 text-center shadow-2xl">
+            <h2 className="mb-2 text-lg font-bold text-black">Time&apos;s up!</h2>
+            <p className="mb-5 text-sm text-gray-500">Your time has ended. This is just a reminder — you can keep working and submit whenever you&apos;re ready.</p>
+            <button onClick={() => setTimeUpModal(false)}
+              className="w-full rounded-full bg-black py-2.5 text-sm font-bold text-white hover:bg-gray-800 transition">
+              Okay
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Word popup */}
       {wordPopup && (
         <div
@@ -741,7 +756,7 @@ export default function TestPage() {
           <span className="text-xs sm:text-sm font-semibold text-black truncate max-w-[100px] sm:max-w-xs">{test.title}</span>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-3">
-          <Timer seconds={timerInitialSeconds || test.timeLimit * 60} onExpire={handleSubmit} />
+          <Timer seconds={timerInitialSeconds || test.timeLimit * 60} onExpire={() => setTimeUpModal(true)} />
           {/* Font size — hidden on mobile */}
           <div className="hidden sm:flex items-center gap-0.5 rounded border border-gray-200 px-1 py-0.5">
             <button onClick={() => setFontIdx((i) => Math.max(0, i - 1))} disabled={fontIdx === 0}
