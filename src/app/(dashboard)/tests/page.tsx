@@ -67,8 +67,8 @@ type Filter = "practice" | "volume" | "predicted";
 
 const FILTERS: { key: Filter; label: string }[] = [
   { key: "practice",  label: "Free Trial" },
-  { key: "volume",    label: "IELTS Volume"  },
-  { key: "predicted", label: "Predicted"     },
+  { key: "volume",    label: "Volume test 7-8-9"  },
+  { key: "predicted", label: "Prediction"     },
 ];
 
 const PASSAGE_CATS = [1, 2, 3] as const;
@@ -116,7 +116,7 @@ export default function TestsPage() {
   function sublabel(t: Test) {
     if (isPredicted(t)) {
       const cat = t.passageCategory;
-      return cat ? `Predicted · Passage ${cat}` : "Predicted";
+      return cat ? `Prediction · Passage ${cat}` : "Prediction";
     }
     const vol = extractVolumeNumber(t.title);
     if (vol !== null) return `Vol ${vol}`;
